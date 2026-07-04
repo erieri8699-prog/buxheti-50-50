@@ -1,641 +1,711 @@
 <!DOCTYPE html>
 <html lang="sq">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Buxheti 50/50 – Erald & Ira</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Buxheti</title>
 <style>
-  html,body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif}
-  *{-webkit-tap-highlight-color:transparent}
+  :root {
+    /* Paleta: Sage Garden */
+    --primary: #4A5D4F;       /* Jeshile Urtie e Errët */
+    --primary-light: #E8F0EA; /* Urtie e Hapur */
+    --secondary: #7A857C;     /* Gri-Urtie */
+    --accent: #C4705A;        /* Terrakotë - Dalje */
+    --success: #6B9B7D;       /* Jeshile Freskie - Hyrje */
+    --bg: #F2F0ED;            /* Gri-Gurë e Hapur */
+    --card-bg: #FFFFFF;       /* E bardhë */
+    --text: #2D312F;          /* Gri-Kafe e Errët */
+    --text-light: #7A857C;    /* Gri-Urtie */
+    --border: #E0DDD8;        /* Bezh-Gri */
+    --shadow: 0 4px 12px rgba(45, 49, 47, 0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 80px; }
+
+  header { 
+    background: linear-gradient(135deg, var(--primary), #5C7060); 
+    color: white; padding: 20px 15px; text-align: center; 
+    position: sticky; top: 0; z-index: 100; 
+    box-shadow: 0 4px 15px rgba(74, 93, 79, 0.2);
+  }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; }
+  
+  nav { display: flex; justify-content: center; gap: 8px; }
+  nav button {
+    background: rgba(255,255,255,0.15); color: white; border: none;
+    padding: 8px 18px; border-radius: 20px; cursor: pointer;
+    font-weight: 500; font-size: 14px; transition: all 0.3s ease;
+  }
+  nav button.active { background: white; color: var(--primary); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: var(--card-bg); border-radius: 16px; padding: 20px;
+    margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .card h2 { 
+    font-size: 17px; margin-bottom: 18px; color: var(--primary); 
+    display: flex; justify-content: space-between; align-items: center; 
+    font-weight: 700; letter-spacing: 0.2px;
+  }
+  
+  input, select {
+    width: 100%; padding: 14px; border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: 16px; margin-bottom: 12px;
+    background: #FAFAF9; transition: border-color 0.2s; color: var(--text);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--primary); background: white; }
+  
+  .btn {
+    padding: 12px 24px; border: none; border-radius: 12px; cursor: pointer;
+    font-weight: 600; font-size: 15px; transition: all 0.2s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(74, 93, 79, 0.25); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: 10px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { 
+    background: var(--card-bg); padding: 18px 12px; border-radius: 16px; 
+    text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .stat-card .label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .stat-card .value { font-size: 22px; font-weight: 800; color: var(--primary); margin-top: 6px; }
+  .stat-card.clickable { cursor: pointer; transition: all 0.2s; }
+  .stat-card.clickable:active { transform: scale(0.97); border-color: var(--primary); }
+
+  .list-item { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 14px 0; border-bottom: 1px solid var(--border); 
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item .info { flex: 1; }
+  .list-item .title { font-weight: 600; font-size: 15px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .list-item .sub { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+  .list-item .amount { font-weight: 700; font-size: 15px; color: var(--accent); }
+
+  .delete-btn { 
+    background: #FCEEEB; border: none; color: var(--accent); 
+    font-size: 16px; padding: 8px; border-radius: 50%; cursor: pointer;
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .delete-btn:hover { background: #F5D5CF; }
+
+  .tabs-header { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+  .tabs-header::-webkit-scrollbar { display: none; }
+  .tab-btn { 
+    padding: 10px 22px; background: white; border: 1.5px solid var(--border); 
+    border-radius: 25px; font-weight: 600; white-space: nowrap; 
+    min-height: 44px; display: flex; align-items: center; gap: 8px; 
+    cursor: pointer; color: var(--text-light); transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(74, 93, 79, 0.2); }
+  .tab-close { background: rgba(0,0,0,0.08); width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .tab-btn.active .tab-close { background: rgba(255,255,255,0.3); }
+
+  .month-navigator { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 18px; background: white; padding: 12px; 
+    border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow);
+  }
+  .month-navigator button { background: none; border: none; font-size: 20px; padding: 5px 15px; cursor: pointer; color: var(--primary); border-radius: 8px; }
+  .month-navigator button:active { background: var(--primary-light); }
+  .month-navigator span { font-weight: 700; font-size: 16px; color: var(--text); }
+
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
+  .calendar-day-name { text-align: center; font-weight: 700; color: var(--text-light); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 0; }
+  .calendar-day { 
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; 
+    background: white; font-size: 14px; position: relative; transition: all 0.2s;
+  }
+  .calendar-day.has-transactions { border-color: var(--primary); background: var(--primary-light); font-weight: 700; color: var(--primary); }
+  .calendar-day.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(74, 93, 79, 0.3); }
+  .calendar-day .day-total { font-size: 9px; margin-top: 2px; font-weight: 600; }
+
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(45, 49, 47, 0.4); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; padding: 28px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(45, 49, 47, 0.15); }
+  .modal h3 { font-size: 18px; color: var(--text); margin-bottom: 15px; font-weight: 700; }
+  .modal-body-scroll { flex: 1; overflow-y: auto; margin: 10px 0; padding-right: 5px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+  .modal-actions .btn { flex: 1; }
+
+  .overview-group { margin-bottom: 20px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: white; box-shadow: var(--shadow); }
+  .overview-header { background: #FAFAF9; padding: 14px 18px; display: flex; justify-content: space-between; font-weight: 700; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .overview-item { display: flex; justify-content: space-between; padding: 12px 18px; border-bottom: 1px dashed var(--border); font-size: 14px; }
+  .ov-plus { color: var(--success); font-weight: 700; } 
+  .ov-minus { color: var(--accent); font-weight: 700; }
+
+  .fund-tabs-header { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
+  .fund-tabs-header::-webkit-scrollbar { display: none; }
+  .fund-tab { padding: 10px 20px; background: white; border: 1.5px solid var(--border); border-radius: 25px; white-space: nowrap; cursor: pointer; font-weight: 600; color: var(--text-light); transition: all 0.2s; }
+  .fund-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .item-wrapper { border: 1.5px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 15px; background: white; }
+  .installment-group { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .installment-input { width: 100px !important; padding: 10px !important; text-align: center; margin: 0 !important; border-radius: 10px; }
+
+  .limit-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+  .limit-green { background: #E8F0EA; color: #3D5A45; } 
+  .limit-orange { background: #FFF3E0; color: #BF6C00; }
+  .limit-red { background: #FCEEEB; color: #A83F39; } 
+  .limit-blue { background: #EDE7F6; color: #5E35B1; }
+  .limit-none { background: #F5F0EB; color: #A1887F; }
+  .limit-input { width: 75px; padding: 8px; text-align: center; border: 1.5px solid var(--border); border-radius: 8px; margin: 0; display: inline-block; font-size: 14px; }
+
+  .note { font-size: 13px; color: var(--text-light); background: #FFF8E1; padding: 14px; border-radius: 12px; margin-bottom: 18px; border-left: 4px solid #D4A574; line-height: 1.5; }
+  .empty-state { text-align: center; color: var(--text-light); padding: 40px 20px; font-style: italic; font-size: 14px; }
+  
+  .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 20px; margin-left: 10px; font-weight: 600; vertical-align: middle; }
+  .sync-on { background: #E8F0EA; color: #3D5A45; }
+  .sync-off { background: #FCEEEB; color: #A83F39; }
 </style>
 </head>
-<body class="bg-[#f7f7f8] text-slate-800 antialiased">
-<div class="max-w-[480px] mx-auto min-h-screen pb-24">
-  <header class="sticky top-0 z-30 backdrop-blur-xl bg-white/75 border-b border-slate-200/70">
-    <div class="px-5 py-4">
-      <h1 class="text-[22px] font-semibold tracking-tight">Buxheti 50/50 – Erald & Ira</h1>
-      <p id="monthLabel" class="text-[13px] text-slate-500 mt-0.5"></p>
+<body>
+
+<header>
+  <h1>Buxheti <span id="headerSyncStatus" class="sync-status sync-off">Offline</span></h1>
+  <nav>
+    <button onclick="showSection('summary')" id="nav-summary" class="active">Përmbledhje</button>
+    <button onclick="showSection('expenses')" id="nav-expenses">Shpenzime</button>
+    <button onclick="showSection('settings')" id="nav-settings">Cilësime</button>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- SUMMARY -->
+  <div id="section-summary" class="section active">
+    <div class="card">
+      <h2>Buxheti mujor</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="label">Buxheti Total</div><input type="number" id="budgetTotal" placeholder="0" onchange="saveBudgets()"></div>
+        <div class="stat-card"><div class="label">Erald (Mbetur)</div><div class="value" id="eraldRemaining">0 LEK</div></div>
+        <div class="stat-card"><div class="label">Ira (Mbetur)</div><div class="value" id="iraRemaining">0 LEK</div></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveBudgets()">Ruaj buxhetet</button>
     </div>
-  </header>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Balanca</div><div class="value" id="statBalance">0 LEK</div></div>
+      <div class="stat-card"><div class="label">Erald paguar</div><div class="value" id="statEraldPaid">0 LEK</div></div>
+      <div class="stat-card"><div class="label">Ira paguar</div><div class="value" id="statIraPaid">0 LEK</div></div>
+      <div class="stat-card clickable" onclick="openMonthlyOverview()">
+        <div class="label">Lëvizjet e Muajit</div>
+        <div class="value" id="statTransCount">0</div>
+        <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Kliko për pasqyrë</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Fondet & Objektivat <button class="btn btn-sm btn-outline" onclick="handleFundAdd()">+ Shto</button></h2>
+      <div class="fund-tabs-header">
+        <button class="fund-tab active" onclick="switchFundTab('goal', this)">🎯 Kukuma</button>
+        <button class="fund-tab" onclick="switchFundTab('debt', this)">💸 Borxhe</button>
+        <button class="fund-tab" onclick="switchFundTab('bonus', this)">💰 Bonus</button>
+      </div>
+      <div class="note" id="fundTabNote">Kukuma dhe Borxhet barten automatikisht në muajt pasardhës.</div>
+      <div id="fundTabContent"></div>
+    </div>
+  </div>
 
-  <main class="px-4 space-y-4 mt-4">
-    <!-- Buxheti -->
-    <section class="bg-white rounded-[28px] shadow-sm border border-slate-200/60 p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-medium text-[15px]">Buxheti mujor</h2>
-        <span class="text-[11px] px-2 py-1 rounded-full bg-slate-100 text-slate-600">LEK</span>
+  <!-- EXPENSES -->
+  <div id="section-expenses" class="section">
+    <div class="card">
+      <h2>Shpenzime fikse <button class="btn btn-sm btn-outline" onclick="openModal('fixed')">+ Shto</button></h2>
+      <div id="fixedExpensesList"></div>
+    </div>
+    <div class="card">
+      <h2>Kategoritë <button class="btn btn-sm btn-outline" onclick="openModal('category')">+ Shto</button></h2>
+      <div id="categoryExpensesList"></div>
+    </div>
+    <div class="card">
+      <h2>Historiku & Kalendari</h2>
+      <div class="tabs-header">
+        <div id="tabsList" style="display: flex; gap: 8px;"></div>
+        <button class="tab-btn" style="border-style:dashed; color:var(--primary);" onclick="addNewTab()">+</button>
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-xs text-slate-500">Buxheti Erald</label>
-          <input id="budgetErald" type="number" inputmode="numeric" class="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="0">
-          <div class="mt-2.5">
-            <div class="flex justify-between text-[11px] mb-1">
-              <span class="text-slate-500">Mbetur</span>
-              <span id="remEraldText" class="font-medium text-blue-700">0 LEK</span>
-            </div>
-            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div id="barErald" class="h-full w-0 bg-blue-500 transition-all duration-500"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-slate-500">Buxheti Ira</label>
-          <input id="budgetIra" type="number" inputmode="numeric" class="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500" placeholder="0">
-          <div class="mt-2.5">
-            <div class="flex justify-between text-[11px] mb-1">
-              <span class="text-slate-500">Mbetur</span>
-              <span id="remIraText" class="font-medium text-fuchsia-700">0 LEK</span>
-            </div>
-            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div id="barIra" class="h-full w-0 bg-fuchsia-500 transition-all duration-500"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <button id="saveBudget" class="mt-4 w-full rounded-2xl bg-slate-900 text-white py-3 text-sm font-medium active:scale-[.99] transition">Ruaj buxhetet</button>
-    </section>
+      <div id="tabContent"></div>
+    </div>
+  </div>
 
-        <!-- Përmbledhje -->
-    <section class="grid grid-cols-3 gap-2.5">
-      <div class="bg-white rounded-[24px] border border-slate-200/60 p-3.5">
-        <p class="text-[11px] text-slate-500">Balanca në buxhet</p>
-        <p id="balanceRemaining" class="text-[17px] font-semibold mt-1 tracking-tight text-emerald-700">0 LEK</p>
+  <!-- SETTINGS -->
+  <div id="section-settings" class="section">
+    <div class="card">
+      <h2>Sinkronizimi Real-Time</h2>
+      <div class="note">Vendosni të njëjtin fjalëkalim në të dy telefonat për t'u lidhur.</div>
+      <p style="margin-bottom:15px; font-size:14px;">Statusi: <strong id="syncStatusText">Shkëputur</strong></p>
+      
+      <label style="font-size:13px; color:var(--text-light); display:block; margin-bottom:6px; font-weight:600;">Fjalëkalimi i Përbashkët</label>
+      <input type="password" id="syncPasswordInput" placeholder="Shkruaj fjalëkalimin..." style="text-align:center; letter-spacing:2px;">
+      
+      <div style="display:flex; gap:12px; margin: 18px 0;">
+        <label style="flex:1; display:flex; align-items:center; gap:10px; padding:14px; border:1.5px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.2s;">
+          <input type="radio" name="user" value="Erald" onchange="saveUser()"> <span style="font-weight:600;">Unë jam Erald</span>
+        </label>
+        <label style="flex:1; display:flex; align-items:center; gap:10px; padding:14px; border:1.5px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.2s;">
+          <input type="radio" name="user" value="Ira" onchange="saveUser()"> <span style="font-weight:600;">Unë jam Ira</span>
+        </label>
       </div>
-      <div class="bg-white rounded-[24px] border border-slate-200/60 p-3.5">
-        <p class="text-[11px] text-slate-500">Erald ka paguar</p>
-        <p id="totalErald" class="text-[17px] font-semibold mt-1 tracking-tight text-blue-700">0 LEK</p>
-      </div>
-      <div class="bg-white rounded-[24px] border border-slate-200/60 p-3.5">
-        <p class="text-[11px] text-slate-500">Ira ka paguar</p>
-        <p id="totalIra" class="text-[17px] font-semibold mt-1 tracking-tight text-fuchsia-700">0 LEK</p>
-      </div>
-    </section>
-
-        
-    <!-- Kukuma -->
-    <section class="bg-white rounded-[28px] shadow-sm border border-slate-200/60 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="font-medium text-[15px]">Kukuma</h2>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-xs text-slate-500">Objektivi</label>
-          <input id="kukumaTarget" type="number" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[14px]">
-        </div>
-        <div>
-          <label class="text-xs text-slate-500">Aktualisht</label>
-          <div class="mt-1 flex gap-2">
-            <input id="kukumaCurrent" type="number" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[14px]" readonly>
-          </div>
-          <div class="mt-2 flex gap-2">
-            <input id="kukumaAdd" type="number" placeholder="shto këtë muaj" class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[14px]">
-            <button id="addKukuma" class="px-3 rounded-xl bg-emerald-600 text-white text-[13px]">Shto</button>
-          </div>
-        </div>
-      </div>
-      <div class="mt-3">
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div id="kukumaBar" class="h-full w-0 bg-emerald-500 transition-all"></div>
-        </div>
-        <p class="text-[11px] text-slate-500 mt-1"><span id="kukumaPct">0</span>% e objektivit</p>
-      </div>
-    </section>
-    <!-- SHPENZIME -->
-    <section class="bg-white rounded-[28px] shadow-sm border border-slate-200/60 p-4">
-      <div class="flex items-center justify-between cursor-pointer" id="expensesHeader">
-        <div>
-          <h2 class="font-medium text-[15px]">Shpenzime</h2>
-          <p class="text-[11px] text-slate-500 mt-0.5">Totali: <span id="totalSpent" class="font-medium text-slate-700">0 LEK</span></p>
-        </div>
-        <span id="toggleExpenses" class="text-[11px] px-2.5 py-1 rounded-full bg-slate-900 text-white">shfaq</span>
-      </div>
-      <div id="expensesWrap" class="hidden mt-4 space-y-5">
-        <!-- Fikse -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-[13px] font-medium text-slate-700">Shpenzime fikse</h3>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100">mujore</span>
-          </div>
-          <div class="flex gap-2">
-            <input id="fixedDesc" type="text" placeholder="p.sh. qira" class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px]">
-            <input id="fixedAmt" type="number" placeholder="0" class="w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px]">
-            <button id="addFixed" class="px-3 rounded-xl bg-slate-900 text-white text-[13px]">Shto</button>
-          </div>
-          <ul id="fixedList" class="mt-2 space-y-1 text-[13px]"></ul>
-        </div>
-        <!-- Ditore -->
-        <div>
-          <h3 class="text-[13px] font-medium text-slate-700 mb-2">Shpenzime ditore</h3>
-          <input id="expenseInput" type="text" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="p.sh. kafe 200" autocomplete="off">
-          <button id="btnAdd" class="w-full mt-2 rounded-2xl bg-slate-900 text-white py-3 font-medium">Shto shpenzim ditor</button>
-          <p class="text-[11px] text-slate-400 mt-1 text-center">Do regjistrohet për <span id="currentPayer" class="font-medium">ty</span></p>
-        </div>
-        <div class="pt-4 border-t border-slate-200">
-          <h3 class="text-[13px] font-medium text-slate-700 mb-2">Limite kategorish</h3>
-
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-medium text-[15px]">Limite kategorish</h2>
-      </div>
-      <div class="flex gap-2">
-        <input id="catName" type="text" placeholder="p.sh. karburant" class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px]">
-        <input id="catLimit" type="number" placeholder="limit" class="w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px]">
-        <button id="addCat" class="px-3 rounded-xl bg-slate-900 text-white text-[13px]">Shto</button>
-      </div>
-      <div id="catList" class="mt-3 space-y-2"></div>
-    
-        </div>
-      </div>
-    </section>
-
-
-<!-- Sinkronizimi -->
-    <section class="bg-white rounded-[28px] border border-slate-200/60 p-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-medium text-[15px]">Sinkronizimi</h2>
-        <div class="flex items-center gap-1.5">
-          <span id="statusDot" class="w-2.5 h-2.5 bg-gray-300 rounded-full transition"></span>
-          <span id="statusText" class="text-xs text-slate-600">Shkëputur</span>
-        </div>
-      </div>
-      <div class="mt-3 space-y-3">
-        <div>
-          <p class="text-[11px] text-slate-500">Kodi i përbashkët</p>
-          <input id="sharedCode" class="w-full mt-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px] focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="p.sh. erald-ira-2026">
-          <p class="text-[10px] text-slate-400 mt-1">Vendosni të njëjtin kod – të dhënat ruhen në cloud</p>
-        </div>
-        <div>
-          <p class="text-[11px] text-slate-500">Unë jam</p>
-          <div class="grid grid-cols-2 gap-2 mt-1">
-            <button id="roleErald" class="role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-blue-50 border-blue-200 text-blue-700">Erald</button>
-            <button id="roleIra" class="role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-slate-50 border-slate-200 text-slate-600">Ira</button>
-          </div>
-        </div>
-        <button id="btnConnect" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium active:scale-95">Aktivizo sinkronizimin</button>
-        <div class="flex items-center justify-between pt-1">
-          <p class="text-[11px] text-slate-500">Kodi: <code id="myId" class="text-[11px]">-</code></p>
-          <button id="copyId" class="text-[11px] px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200">Kopjo</button>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- Lista -->
-    <section class="bg-white rounded-[28px] border border-slate-200/60 p-4">
-      <div class="flex items-center justify-between mb-1">
-        <h2 class="font-medium text-[15px]">Transaksionet</h2>
-        <span id="txCount" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">0</span>
-      </div>
-      <ul id="txList" class="divide-y divide-slate-100 -mx-1"></ul>
-      <p id="emptyState" class="text-center text-sm text-slate-400 py-10 hidden">Asnjë shpenzim këtë muaj. Shto të parin sipër!</p>
-    </section>
-
-    <p class="text-center text-[11px] text-slate-400 pb-8">Ruhet automatikisht • Sinkronizohet në cloud</p>
-  </main>
+      
+      <button class="btn btn-primary" style="width:100%;" onclick="toggleSync()" id="syncBtn">Aktivizo Sinkronizimin</button>
+      <p id="syncError" style="color:var(--accent); font-size:12px; margin-top:12px; text-align:center; display:none; font-weight:600;"></p>
+    </div>
+  </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Titulli</h3>
+    <div class="modal-body-scroll" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Mbyll</button>
+      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveModal()">Ruaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat version, e thjeshtë për t'u përdorur) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-const STORAGE_KEY = 'buxheti-erald-ira-v2';
-const monthsSq = ['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
-const now = new Date();
-const monthKey = now.toISOString().slice(0,7);
-document.getElementById('monthLabel').textContent = monthsSq[now.getMonth()] + ' ' + now.getFullYear();
+  // --- FIREBASE CONFIGURATION ---
+  // Zëvendëso vlerat poshtë me ato që merr nga faqja e Firebase (shih udhëzimet)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAn7_Z2fTfr-zi3QJupgE7mrjbr783PaHE",
+    authDomain: "buxheti-familjar-4117d.firebaseapp.com",
+    projectId: "buxheti-familjar-4117d",
+    storageBucket: "buxheti-familjar-4117d.firebasestorage.app",
+    messagingSenderId: "247411664362",
+    appId: "1:247411664362:web:c678e0f54b83f05a97be93"
+  };
 
-let state = {};
-try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {transactions:[], budgets:{}} } catch { state = {transactions:[], budgets:{}} }
-if (!state.transactions) state.transactions = [];
-if (!state.budgets) state.budgets = {};
-if (!state.fixedPayments) state.fixedPayments = [];
-if (!state.savings) state.savings = {name:'kukuma', target:0, current:0};
-if (!state.appliedFixed) state.appliedFixed = {};
-if (!state.categoryLimits) state.categoryLimits = [];
+  let db = null;
+  let isFirebaseInitialized = false;
+  let unsubscribe = null;
 
-const fmt = n => new Intl.NumberFormat('sq-AL').format(Math.round(n || 0));
-
-function parseInput(str){
-  if(!str) return null;
-  // find first number with possible thousand separators (space or dot) and decimal comma/dot
-  const match = str.match(/(\d{1,3}(?:[.\s]\d{3})+|\d+)(?:[.,](\d+))?/);
-  // fallback to simple digits
-  const m = match || str.match(/(\d+)/);
-  if(!m) return null;
-  let numStr = m[0].replace(/\s/g,'');
-  // handle Albanian format: dots are thousands, comma is decimal
-  if(numStr.includes(',') && numStr.includes('.')){
-    // assume dot = thousand, comma = decimal
-    numStr = numStr.replace(/\./g,'').replace(',', '.');
-  } else if(numStr.includes(',')){
-    // could be decimal or thousand - if comma followed by 3 digits at end, treat as thousand
-    const parts = numStr.split(',');
-    if(parts[1] && parts[1].length === 3 && !numStr.includes('.')){
-      numStr = parts.join('');
-    } else {
-      numStr = numStr.replace(',', '.');
+  try {
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      isFirebaseInitialized = true;
     }
-  } else {
-    numStr = numStr.replace(/\./g,'');
-  }
-  const amount = parseFloat(numStr);
-  if(isNaN(amount) || amount<=0) return null;
-  let desc = str.replace(m[0], '').trim().replace(/\s+/g,' ');
-  // remove payer words if present
-  desc = desc.replace(/\b(erald|eraldi|ai|ira|ajo)\b/gi,'').trim();
-  if(!desc) desc = 'Shpenzim';
-  desc = desc.charAt(0).toUpperCase() + desc.slice(1);
-  return {amount, description: desc};
-}
+  } catch (e) { console.error("Firebase init error:", e); }
 
-function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); render(); }
-function localUpdate(){ persist(); sendUpdate(); }
-
-
-function render(){
-  const budgets = state.budgets[monthKey] || {erald:0, ira:0};
-  if(document.activeElement !== budgetErald) budgetErald.value = budgets.erald || '';
-  if(document.activeElement !== budgetIra) budgetIra.value = budgets.ira || '';
-
-  const monthTx = state.transactions.filter(t => t.date && t.date.startsWith(monthKey));
-  const total = monthTx.reduce((s,t)=>s+t.amount,0);
-  const totalE = monthTx.filter(t=>t.payer==='erald').reduce((s,t)=>s+t.amount,0);
-  const totalI = monthTx.filter(t=>t.payer==='ira').reduce((s,t)=>s+t.amount,0);
-
-  document.getElementById('balanceRemaining').textContent = fmt((budgets.erald||0)+(budgets.ira||0)-total) + ' LEK';
-  const totalEl = document.getElementById('totalSpent'); if(totalEl) totalEl.textContent = fmt(total) + ' LEK';
-  document.getElementById('totalErald').textContent = fmt(totalE) + ' LEK';
-  document.getElementById('totalIra').textContent = fmt(totalI) + ' LEK';
-
-  const remE = (budgets.erald||0) - totalE;
-  const remI = (budgets.ira||0) - totalI;
-  remEraldText.textContent = fmt(remE) + ' LEK';
-  remIraText.textContent = fmt(remI) + ' LEK';
-  remEraldText.className = 'font-medium ' + (remE<0 ? 'text-red-600' : 'text-blue-700');
-  remIraText.className = 'font-medium ' + (remI<0 ? 'text-red-600' : 'text-fuchsia-700');
-  
-  const pctE = budgets.erald ? Math.max(0, Math.min(100, (remE/budgets.erald)*100)) : 0;
-  const pctI = budgets.ira ? Math.max(0, Math.min(100, (remI/budgets.ira)*100)) : 0;
-  barErald.style.width = pctE + '%';
-  barIra.style.width = pctI + '%';
-  barErald.className = 'h-full transition-all duration-500 ' + (remE<0 ? 'bg-red-500' : 'bg-blue-500');
-  barIra.className = 'h-full transition-all duration-500 ' + (remI<0 ? 'bg-red-500' : 'bg-fuchsia-500');
-
-  txCount.textContent = monthTx.length;
-  if(monthTx.length === 0){
-    txList.innerHTML = '';
-    emptyState.classList.remove('hidden');
-  } else {
-    emptyState.classList.add('hidden');
-    txList.innerHTML = monthTx.sort((a,b)=>b.timestamp-a.timestamp).map(t=>`
-      <li class="flex items-center gap-3 px-1 py-3">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <p class="text-[14px] leading-snug">${t.description}</p>
-            <span class="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${t.payer==='erald'?'bg-blue-50 text-blue-700 border-blue-200':'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200'}">${t.payer==='erald'?'Erald':'Ira'}</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1">${new Date(t.timestamp).toLocaleDateString('sq-AL',{day:'2-digit',month:'short'})}</p>
-        </div>
-        <div class="text-right shrink-0">
-          <p class="text-[15px] font-medium">${fmt(t.amount)}</p>
-          <p class="text-[10px] text-slate-500 -mt-0.5">LEK</p>
-        </div>
-        <button data-del="${t.id}" class="shrink-0 w-8 h-8 grid place-items-center rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:scale-90 transition">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6h10z"/></svg>
-        </button>
-      </li>
-    `).join('');
-  }
-  
-  // update current payer label
-  const cp = document.getElementById('currentPayer');
-  if(cp) cp.textContent = role==='erald' ? 'Erald' : 'Ira';
-}
-
-
-
-document.getElementById('btnAdd').onclick = ()=>{
-  addTx(role);
-};
-
-expenseInput.addEventListener('keydown', e=>{ 
-  if(e.key==='Enter'){ 
-    e.preventDefault(); 
-    addTx(role); 
-  }
-});
-
-function addTx(payer){
-  const input = expenseInput;
-  const parsed = parseInput(input.value);
-  if(!parsed){
-    input.classList.add('ring-2','ring-red-400');
-    setTimeout(()=>input.classList.remove('ring-2','ring-red-400'),800);
-    input.focus();
-    return;
-  }
-  const tx = {
-    id: (crypto.randomUUID && crypto.randomUUID()) || String(Date.now())+Math.random(),
-    description: parsed.description,
-    amount: parsed.amount,
-    payer,
-    date: monthKey + '-' + String(now.getDate()).padStart(2,'0'),
-    timestamp: Date.now()
+  let state = {
+    currentSection: 'summary', user: 'Erald', budgets: { total: 0 },
+    transactions: [], fixedExpenses: [], categories: ['Të gjitha', 'Ushqim', 'Faturat', 'Transport', 'Argëtim'],
+    categoryLimits: {}, goals: [], debts: [], bonuses: [], payments: [], 
+    syncPassword: '', isSynced: false, activeTab: 'Të gjitha', isCalendarView: false, selectedDate: null, activeFundTab: 'goal',
+    viewYear: new Date().getFullYear(), viewMonth: new Date().getMonth()
   };
-  state.transactions.push(tx);
-  input.value = '';
-  localUpdate();
-  input.focus();
-}
 
-// removed = () => addTx('erald');
-// removed = () => addTx('ira');
+  function loadState() {
+    const saved = localStorage.getItem('buxheti_state');
+    if (saved) {
+      state = { ...state, ...JSON.parse(saved) };
+      if (!state.payments) state.payments = [];
+      const today = new Date().toISOString().split('T')[0];
+      const addIdsAndDates = (arr) => arr.forEach((item, idx) => { 
+        if(!item.id) item.id = Date.now() + idx + Math.random(); 
+        if(!item.date) item.date = today; 
+      });
+      addIdsAndDates(state.transactions); addIdsAndDates(state.fixedExpenses); addIdsAndDates(state.goals); addIdsAndDates(state.debts); addIdsAndDates(state.bonuses);
+      state.debts.forEach(d => { if(!d.originalAmount) d.originalAmount = d.amount; });
+    }
+    updateSyncUI();
+    renderAll();
+    if (state.isSynced && state.syncPassword && isFirebaseInitialized) startRealtimeSync();
+  }
 
+  function saveState() { 
+    localStorage.setItem('buxheti_state', JSON.stringify(state)); 
+    if (state.isSynced && db) {
+      db.collection('budgets').doc(state.syncPassword).set(state).catch(err => console.error("Sync upload failed:", err));
+    }
+  }
 
-txList.addEventListener('click', e=>{
-  const btn = e.target.closest('[data-del]');
-  if(btn){ state.transactions = state.transactions.filter(t=>t.id!==btn.dataset.del); localUpdate(); }
-});
-
-saveBudget.onclick = ()=>{
-  const e = parseFloat(budgetErald.value)||0;
-  const i = parseFloat(budgetIra.value)||0;
-  state.budgets[monthKey] = {erald:e, ira:i};
-  localUpdate();
-  saveBudget.textContent = 'U ruajt!';
-  setTimeout(()=>saveBudget.textContent='Ruaj buxhetet',1200);
-};
-
-
-// GUN Sync - funksionon edhe kur nuk jeni të dy online
-let gun = null;
-let gunRef = null;
-let sharedCode = localStorage.getItem('peer-shared-code') || '';
-let role = localStorage.getItem('peer-role') || 'erald';
-let lastRemoteUpdate = 0;
-
-function setStatus(s){
-  if(s==='connected'){ statusDot.className='w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse'; statusText.textContent='Sinkronizuar'; }
-  else if(s==='connecting'){ statusDot.className='w-2.5 h-2.5 bg-amber-500 rounded-full'; statusText.textContent='Duke u lidhur...'; }
-  else { statusDot.className='w-2.5 h-2.5 bg-gray-300 rounded-full'; statusText.textContent='Lokal'; }
-}
-
-function initGun(){
-  if(!sharedCode) return;
-  setStatus('connecting');
-  gun = Gun({
-    peers: ['https://gun-manhattan.herokuapp.com/gun', 'https://peer.wallie.io/gun'],
-    localStorage: false
-  });
-  gunRef = gun.get('buxheti-5050-v2').get(sharedCode);
-  gunRef.on((data) => {
-    if(!data || !data.payload) return;
-    try {
-      const incoming = JSON.parse(data.payload);
-      if(incoming.updatedAt && incoming.updatedAt > lastRemoteUpdate){
-        lastRemoteUpdate = incoming.updatedAt;
-        mergeData(incoming);
-        setStatus('connected');
+  function startRealtimeSync() {
+    if (!db || !state.syncPassword) return;
+    if (unsubscribe) unsubscribe();
+    unsubscribe = db.collection('budgets').doc(state.syncPassword).onSnapshot((doc) => {
+      if (doc.exists) {
+        const remoteState = doc.data();
+        state.transactions = remoteState.transactions || [];
+        state.fixedExpenses = remoteState.fixedExpenses || [];
+        state.goals = remoteState.goals || [];
+        state.debts = remoteState.debts || [];
+        state.bonuses = remoteState.bonuses || [];
+        state.payments = remoteState.payments || [];
+        state.budgets = remoteState.budgets || { total: 0 };
+        state.categories = remoteState.categories || state.categories;
+        state.categoryLimits = remoteState.categoryLimits || {};
+        localStorage.setItem('buxheti_state', JSON.stringify(state));
+        renderAll();
       }
-    } catch(e){}
-  });
-  setTimeout(()=> setStatus('connected'), 1500);
-}
-
-function mergeData(incoming){
-  const map = new Map(state.transactions.map(t=>[t.id,t]));
-  (incoming.transactions||[]).forEach(t=>{ const ex=map.get(t.id); if(!ex || t.timestamp >= ex.timestamp) map.set(t.id,t); });
-  state.transactions = Array.from(map.values());
-  state.budgets = {...state.budgets, ...(incoming.budgets||{})};
-  persist();
-  render();
-}
-
-function sendUpdate(){
-  if(!gunRef || !sharedCode) return;
-  const payload = JSON.stringify({...state, updatedAt: Date.now(), by: role});
-  lastRemoteUpdate = Date.now();
-  gunRef.put({payload, updatedAt: lastRemoteUpdate});
-  setStatus('connected');
-}
-
-const myIdEl = document.getElementById('myId');
-const sharedCodeInput = document.getElementById('sharedCode');
-const btnConnect = document.getElementById('btnConnect');
-const roleErald = document.getElementById('roleErald');
-const roleIra = document.getElementById('roleIra');
-const copyId = document.getElementById('copyId');
-
-sharedCodeInput.value = sharedCode;
-
-function updateRoleUI(){
-  if(role==='erald'){
-    roleErald.className = 'role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-blue-50 border-blue-200 text-blue-700';
-    roleIra.className = 'role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-slate-50 border-slate-200 text-slate-600';
-    myIdEl.textContent = sharedCode ? sharedCode + '-erald' : '-';
-  } else {
-    roleIra.className = 'role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700';
-    roleErald.className = 'role-btn px-3 py-2.5 rounded-xl border text-sm font-medium bg-slate-50 border-slate-200 text-slate-600';
-    myIdEl.textContent = sharedCode ? sharedCode + '-ira' : '-';
-  }
-}
-updateRoleUI();
-
-roleErald.onclick = ()=>{ role='erald'; localStorage.setItem('peer-role', role); updateRoleUI(); render(); sendUpdate(); };
-roleIra.onclick = ()=>{ role='ira'; localStorage.setItem('peer-role', role); updateRoleUI(); render(); sendUpdate(); };
-
-btnConnect.onclick = ()=>{
-  const code = sharedCodeInput.value.trim().toLowerCase().replace(/\s+/g,'-');
-  if(!code){ sharedCodeInput.focus(); return; }
-  sharedCode = code;
-  localStorage.setItem('peer-shared-code', sharedCode);
-  updateRoleUI();
-  initGun();
-  setTimeout(()=> sendUpdate(), 800);
-  btnConnect.textContent = 'U aktivizua!';
-  setTimeout(()=>btnConnect.textContent='Aktivizo sinkronizimin',1200);
-};
-
-copyId.onclick = async ()=>{ 
-  if(!sharedCode) return; 
-  try{ 
-    await navigator.clipboard.writeText(sharedCode); 
-    copyId.textContent='U kopjua'; 
-    setTimeout(()=>copyId.textContent='Kopjo',1200);
-  }catch{}
-};
-
-
-
-
-
-// Fixed payments
-const fixedDesc = document.getElementById('fixedDesc');
-const fixedAmt = document.getElementById('fixedAmt');
-const addFixed = document.getElementById('addFixed');
-const fixedList = document.getElementById('fixedList');
-
-function renderFixed(){
-  fixedList.innerHTML = state.fixedPayments.map(f=>`
-    <li class="flex justify-between items-center py-1">
-      <span>${f.description} – ${fmt(f.amount)} LEK (${f.payer==='erald'?'Erald':'Ira'})</span>
-      <button data-fid="${f.id}" class="text-slate-400 hover:text-red-600">×</button>
-    </li>`).join('');
-}
-addFixed.onclick = ()=>{
-  const d = fixedDesc.value.trim(); const a = parseFloat(fixedAmt.value);
-  if(!d || !a) return;
-  const f = {id: Date.now()+Math.random(), description:d, amount:a, payer: role};
-  state.fixedPayments.push(f);
-  // shto direkt për këtë muaj
-  state.transactions.push({
-    id: 'fix-'+monthKey+'-'+f.id,
-    description: '[Fikse] '+d,
-    amount: a,
-    payer: role,
-    date: monthKey+'-01',
-    timestamp: Date.now(),
-    fixed:true
-  });
-  state.appliedFixed[monthKey] = true;
-  fixedDesc.value=''; fixedAmt.value=''; localUpdate(); renderFixed();
-};
-fixedList.onclick = e=>{ const b=e.target.closest('[data-fid]'); if(b){ state.fixedPayments = state.fixedPayments.filter(f=>f.id!=b.dataset.fid); localUpdate(); renderFixed(); }};
-
-// Apply fixed each month
-function applyFixed(){
-  if(state.appliedFixed[monthKey]) return;
-  state.fixedPayments.forEach(f=>{
-    state.transactions.push({
-      id: 'fix-'+monthKey+'-'+f.id,
-      description: '[Fikse] '+f.description,
-      amount: f.amount,
-      payer: f.payer,
-      date: monthKey+'-01',
-      timestamp: Date.now(),
-      fixed:true
+    }, (err) => {
+      console.error("Sync listener error:", err);
+      document.getElementById('syncError').innerText = "Gabim lidhjeje: " + err.message;
+      document.getElementById('syncError').style.display = 'block';
     });
-  });
-  state.appliedFixed[monthKey]=true;
-}
+    updateSyncUI(true);
+  }
 
-// Kukuma
-const kukumaTarget = document.getElementById('kukumaTarget');
-const kukumaCurrent = document.getElementById('kukumaCurrent');
-const addKukuma = document.getElementById('addKukuma');
-const kukumaBar = document.getElementById('kukumaBar');
-const kukumaPct = document.getElementById('kukumaPct');
+  function toggleSync() {
+    const pwd = document.getElementById('syncPasswordInput').value.trim();
+    if (!pwd) return alert("Vendosni një fjalëkalim!");
+    if (!isFirebaseInitialized) return alert("Firebase nuk është konfiguruar ende në kod!");
+    state.syncPassword = pwd;
+    state.isSynced = !state.isSynced;
+    if (state.isSynced) {
+      startRealtimeSync();
+      db.collection('budgets').doc(pwd).get().then(doc => { if (!doc.exists) saveState(); });
+    } else {
+      if (unsubscribe) unsubscribe();
+      updateSyncUI(false);
+    }
+    saveState();
+  }
 
-function renderKukuma(){
-  kukumaTarget.value = state.savings.target || '';
-  kukumaCurrent.value = state.savings.current || 0;
-  const pct = state.savings.target ? Math.min(100, Math.round((state.savings.current/state.savings.target)*100)) : 0;
-  kukumaBar.style.width = pct+'%';
-  kukumaPct.textContent = pct;
-}
-kukumaTarget.onchange = ()=>{ state.savings.target = parseFloat(kukumaTarget.value)||0; localUpdate(); renderKukuma(); };
-const kukumaAdd = document.getElementById('kukumaAdd');
-addKukuma.onclick = ()=>{
-  const amt = parseFloat(kukumaAdd.value);
-  if(!amt) return;
-  state.savings.current = (state.savings.current||0)+amt;
-  state.transactions.push({
-    id: 'kuk-'+Date.now(),
-    description: 'Kukuma',
-    amount: amt,
-    payer: role,
-    date: monthKey+'-'+String(new Date().getDate()).padStart(2,'0'),
-    timestamp: Date.now()
-  });
-  kukumaAdd.value='';
-  localUpdate(); renderKukuma();
-};
+  function updateSyncUI(connected = state.isSynced) {
+    const statusText = document.getElementById('syncStatusText');
+    const headerStatus = document.getElementById('headerSyncStatus');
+    const btn = document.getElementById('syncBtn');
+    const err = document.getElementById('syncError');
+    if (connected && isFirebaseInitialized) {
+      statusText.innerText = "I Lidhur (Real-Time)"; statusText.style.color = "var(--success)";
+      headerStatus.innerText = "Online"; headerStatus.className = "sync-status sync-on";
+      btn.innerText = "Çaktivizo Sinkronizimin"; btn.classList.remove('btn-primary'); btn.classList.add('btn-outline');
+      err.style.display = 'none';
+    } else {
+      statusText.innerText = "Shkëputur"; statusText.style.color = "var(--accent)";
+      headerStatus.innerText = "Offline"; headerStatus.className = "sync-status sync-off";
+      btn.innerText = "Aktivizo Sinkronizimin"; btn.classList.add('btn-primary'); btn.classList.remove('btn-outline');
+    }
+    document.getElementById('syncPasswordInput').value = state.syncPassword || '';
+    document.querySelector(`input[name="user"][value="${state.user}"]`).checked = true;
+  }
 
-// extend render
-const _origRender = render;
-render = function(){
-  applyFixed();
-  _origRender();
-  renderFixed();
-  renderKukuma();
-};
+  function renderAll() {
+    if (state.currentSection === 'summary') renderSummary();
+    if (state.currentSection === 'expenses') renderExpensesView();
+    if (state.currentSection === 'settings') updateSyncUI();
+  }
 
+  function changeMonth(delta) {
+    let m = state.viewMonth + delta, y = state.viewYear;
+    if (m > 11) { m = 0; y++; } if (m < 0) { m = 11; y--; }
+    state.viewMonth = m; state.viewYear = y; state.selectedDate = null;
+    localStorage.setItem('buxheti_state', JSON.stringify(state));
+    renderExpensesView();
+    if(document.getElementById('modalOverlay').classList.contains('active') && document.getElementById('modalTitle').innerText.includes('Pasqyra')) openMonthlyOverview();
+  }
 
-const txHeader = document.getElementById('txHeader');
-const txWrap = document.getElementById('txWrap');
-const toggleTx = document.getElementById('toggleTx');
-if(txHeader){
-  txHeader.onclick = ()=>{
-    const hidden = txWrap.classList.contains('hidden');
-    txWrap.classList.toggle('hidden');
-    toggleTx.textContent = hidden ? 'mbyll' : 'shfaq';
-  };
-}
+  function getMonthName(m) { return ["Janar","Shkurt","Mars","Prill","Maj","Qershor","Korrik","Gusht","Shtator","Tetor","Nëntor","Dhjetor"][m]; }
 
+  function deleteItem(type, id) {
+    if (!confirm('Fshi këtë regjistrim?')) return;
+    if (type === 'fixed') state.fixedExpenses = state.fixedExpenses.filter(i => i.id !== id);
+    else if (type === 'transaction') state.transactions = state.transactions.filter(i => i.id !== id);
+    else if (type === 'goal') { state.goals = state.goals.filter(i => i.id !== id); state.payments = state.payments.filter(p => !(p.targetType === 'goal' && p.targetId === id)); }
+    else if (type === 'debt') { state.debts = state.debts.filter(i => i.id !== id); state.payments = state.payments.filter(p => !(p.targetType === 'debt' && p.targetId === id)); }
+    else if (type === 'bonus') state.bonuses = state.bonuses.filter(i => i.id !== id);
+    saveState(); renderAll();
+  }
 
-const expensesHeader = document.getElementById('expensesHeader');
-const expensesWrap = document.getElementById('expensesWrap');
-const toggleExpenses = document.getElementById('toggleExpenses');
-if(expensesHeader){
-  expensesHeader.onclick = (e)=>{
-    // avoid toggle when clicking input
-    if(e.target.tagName==='INPUT' || e.target.tagName==='BUTTON') return;
-    const hidden = expensesWrap.classList.contains('hidden');
-    expensesWrap.classList.toggle('hidden');
-    toggleExpenses.textContent = hidden ? 'mbyll' : 'shfaq';
-  };
-}
+  function deletePayment(paymentId) {
+    if (!confirm('Fshi këtë këst?')) return;
+    const pIdx = state.payments.findIndex(p => p.id === paymentId);
+    if (pIdx === -1) return;
+    const p = state.payments[pIdx];
+    const target = p.targetType === 'goal' ? state.goals.find(g => g.id === p.targetId) : state.debts.find(d => d.id === p.targetId);
+    if (target) {
+        if (p.targetType === 'goal') target.current = Math.max(0, target.current - p.amount);
+        else if (p.targetType === 'debt') target.amount += p.amount;
+    }
+    state.payments.splice(pIdx, 1); saveState(); renderAll();
+  }
 
-// Category limits
-const catName = document.getElementById('catName');
-const catLimit = document.getElementById('catLimit');
-const addCat = document.getElementById('addCat');
-const catList = document.getElementById('catList');
+  function switchFundTab(tab, btn) {
+    state.activeFundTab = tab;
+    document.querySelectorAll('.fund-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFundTabContent(); localStorage.setItem('buxheti_state', JSON.stringify(state));
+  }
+  function handleFundAdd() { openModal(state.activeFundTab); }
+  function renderFundTabContent() {
+    const container = document.getElementById('fundTabContent');
+    if (state.activeFundTab === 'goal') container.innerHTML = getListHTML(state.goals, 'goal');
+    else if (state.activeFundTab === 'debt') container.innerHTML = getListHTML(state.debts, 'debt');
+    else container.innerHTML = getListHTML(state.bonuses, 'bonus');
+  }
 
-function renderCategories(){
-  const monthTx = state.transactions.filter(t => t.date && t.date.startsWith(monthKey));
-  catList.innerHTML = state.categoryLimits.map(c=>{
-    const spent = monthTx.filter(t=> t.description.toLowerCase().includes(c.name.toLowerCase())).reduce((s,t)=>s+t.amount,0);
-    const over = spent > c.limit;
-    const pct = c.limit ? Math.min(100, Math.round((spent/c.limit)*100)) : 0;
-    return `<div class="p-2 rounded-xl border ${over?'border-red-300 bg-red-50':'border-slate-200 bg-slate-50'}">
-      <div class="flex justify-between items-center">
-        <span class="text-[13px] font-medium capitalize">${c.name}</span>
-        <button data-cid="${c.id}" class="text-slate-400 hover:text-red-600 text-[12px]">×</button>
-      </div>
-      <div class="flex justify-between text-[12px] mt-1">
-        <span class="${over?'text-red-600 font-semibold':'text-slate-600'}">${fmt(spent)} / ${fmt(c.limit)} LEK</span>
-        <span class="${over?'text-red-600':'text-slate-500'}">${pct}%</span>
-      </div>
-      <div class="h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
-        <div class="h-full ${over?'bg-red-500':'bg-slate-900'}" style="width:${pct}%"></div>
-      </div>
-    </div>`;
-  }).join('');
-}
-addCat.onclick = ()=>{
-  const n = catName.value.trim().toLowerCase(); const l = parseFloat(catLimit.value);
-  if(!n || !l) return;
-  state.categoryLimits.push({id: Date.now()+Math.random(), name:n, limit:l});
-  catName.value=''; catLimit.value=''; localUpdate(); renderCategories();
-};
-catList.onclick = e=>{ const b=e.target.closest('[data-cid]'); if(b){ state.categoryLimits = state.categoryLimits.filter(c=>c.id!=b.dataset.cid); localUpdate(); renderCategories(); }};
+  function showSection(section) {
+    state.currentSection = section;
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`section-${section}`).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`nav-${section}`).classList.add('active');
+    renderAll();
+  }
 
-// extend render
-const _origRender2 = render;
-render = function(){
-  _origRender2();
-  renderCategories();
-};
-// Init
-render();
-if(sharedCode){ initGun(); }
+  function calculateBalance() {
+    const transTotal = state.transactions.reduce((s, t) => s + t.amount, 0);
+    const fixedTotal = state.fixedExpenses.reduce((s, f) => s + f.amount, 0);
+    const goalsTotal = state.goals.reduce((s, g) => s + g.current, 0); 
+    const debtsPaidTotal = state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').reduce((s, p) => s + p.amount, 0);
+    const bonusTotal = state.bonuses.reduce((s, b) => s + b.amount, 0);
+    const monthlyReceived = state.payments.filter(p => p.type === 'received').reduce((s, p) => s + p.amount, 0);
+    return (state.budgets.total || 0) - (transTotal + fixedTotal + goalsTotal + debtsPaidTotal) + (bonusTotal + monthlyReceived);
+  }
 
-if(sharedCode) initPeer();
+  function openMonthlyOverview() {
+    const cm = state.viewMonth, cy = state.viewYear;
+    let groups = {
+      income: { title: "💰 Të Ardhura & Bonuse", items: [], total: 0, type: 'plus' },
+      received: { title: "💵 Këste të Arkëtuara", items: [], total: 0, type: 'plus' },
+      fixed: { title: "🏠 Shpenzime Fikse", items: [], total: 0, type: 'minus' },
+      variable: { title: "🛒 Shpenzime Ndryshueshme", items: [], total: 0, type: 'minus' },
+      debt_paid: { title: "💸 Këste Borxhesh Paguara", items: [], total: 0, type: 'minus' },
+      goal: { title: "🎯 Kursime Kukuma", items: [], total: 0, type: 'minus' }
+    };
+    state.bonuses.forEach(b => { const d = new Date(b.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.income.items.push({ desc: b.name, sub: b.date, amount: b.amount }); groups.income.total += b.amount; } });
+    state.payments.filter(p => p.type === 'received').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.received.items.push({ desc: target ? target.name : 'I panjohur', sub: p.date, amount: p.amount }); groups.received.total += p.amount; } });
+    state.fixedExpenses.forEach(f => { const d = new Date(f.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.fixed.items.push({ desc: f.name, sub: f.date, amount: f.amount }); groups.fixed.total += f.amount; } });
+    state.transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===cm && d.getFullYear()===cy; }).forEach(t => { groups.variable.items.push({ desc: t.desc, sub: `${t.category} • ${t.date}`, amount: t.amount }); groups.variable.total += t.amount; });
+    state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.debt_paid.items.push({ desc: target ? target.name : 'Borxh', sub: p.date, amount: p.amount }); groups.debt_paid.total += p.amount; } });
+    const goalPaymentsThisMonth = state.payments.filter(p => p.targetType === 'goal' && new Date(p.date).getMonth() === cm && new Date(p.date).getFullYear() === cy);
+    const goalAddedThisMonth = goalPaymentsThisMonth.reduce((s,p) => s+p.amount, 0);
+    if(goalAddedThisMonth > 0) { groups.goal.items.push({desc: "Pagesa drejt objektivave", sub: "Këtë muaj", amount: goalAddedThisMonth}); groups.goal.total = goalAddedThisMonth; }
+
+    let html = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(cm)} ${cy}</span><button onclick="changeMonth(1)">❯</button></div>`;
+    const renderGroup = (key) => { const g = groups[key]; if (g.items.length === 0) return ''; let itemsHtml = g.items.map(i => `<div class="overview-item"><div style="display:flex;flex-direction:column;"><span>${i.desc}</span><span style="font-size:11px;color:var(--text-light);">${i.sub}</span></div><div class="${g.type==='plus'?'ov-plus':'ov-minus'}">${g.type==='plus'?'+':'-'}${i.amount}</div></div>`).join(''); return `<div class="overview-group"><div class="overview-header" style="color:${g.type==='plus'?'var(--success)':'var(--accent)'}"><span>${g.title}</span><span>${g.type==='plus'?'+':'-'}${g.total} LEK</span></div><div class="overview-items">${itemsHtml}</div></div>`; };
+
+    html += renderGroup('income') + renderGroup('received') + renderGroup('fixed') + renderGroup('variable') + renderGroup('debt_paid') + renderGroup('goal');
+    const monthIn = groups.income.total + groups.received.total;
+    const monthOut = groups.fixed.total + groups.variable.total + groups.debt_paid.total + groups.goal.total;
+    const monthNet = monthIn - monthOut;
+    html += `<div style="margin-top:20px; padding:20px; background:white; border-radius:16px; text-align:center; border:1px solid var(--border); box-shadow:var(--shadow);"><div style="font-size:12px; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Rezultati i ${getMonthName(cm)}</div><div style="font-size:28px; font-weight:800; color:${monthNet>=0?'var(--success)':'var(--accent)'}; margin:8px 0;">${monthNet>0?'+':''}${Math.round(monthNet)} LEK</div><div style="font-size:12px; color:var(--text-light);">Balanca Globale: ${Math.round(calculateBalance())} LEK</div></div>`;
+
+    document.getElementById('modalTitle').innerText = '📊 Pasqyra Financiare';
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function renderSummary() {
+    document.getElementById('budgetTotal').value = state.budgets.total || '';
+    const eraldSpent = state.transactions.filter(t => t.paidBy === 'Erald').reduce((s,t)=>s+t.amount,0);
+    const iraSpent = state.transactions.filter(t => t.paidBy === 'Ira').reduce((s,t)=>s+t.amount,0);
+    const half = (state.budgets.total||0)/2;
+    document.getElementById('eraldRemaining').innerText = `${Math.round(half - eraldSpent)} LEK`;
+    document.getElementById('iraRemaining').innerText = `${Math.round(half - iraSpent)} LEK`;
+    document.getElementById('statBalance').innerText = `${Math.round(calculateBalance())} LEK`;
+    document.getElementById('statEraldPaid').innerText = `${eraldSpent} LEK`;
+    document.getElementById('statIraPaid').innerText = `${iraSpent} LEK`;
+    const now = new Date();
+    const cnt = state.transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
+    document.getElementById('statTransCount').innerText = cnt;
+    renderList('fixedExpensesList', state.fixedExpenses, 'fixed');
+    renderList('categoryExpensesList', state.transactions, 'category');
+    renderFundTabContent();
+  }
+
+  function saveBudgets() { state.budgets.total = parseFloat(document.getElementById('budgetTotal').value)||0; saveState(); renderSummary(); }
+  function updateCategoryLimit(cat, val) { state.categoryLimits[cat] = parseFloat(val)||0; saveState(); renderExpensesView(); }
+
+  function payInstallment(targetType, index) {
+    const inputId = targetType === 'goal' ? `goalPay_${index}` : `debtPay_${index}`;
+    const val = parseFloat(document.getElementById(inputId).value);
+    if (!val || val <= 0) return alert('Vendosni shumën');
+    const target = targetType === 'goal' ? state.goals[index] : state.debts[index];
+    const isReceived = (targetType === 'debt' && target.type === 'owed');
+    state.payments.push({ id: Date.now()+Math.random(), targetId: target.id, targetType, amount: val, date: new Date().toISOString().split('T')[0], type: isReceived?'received':'paid' });
+    if (targetType === 'goal') target.current += val;
+    else { target.amount -= val; if(target.amount<0) target.amount=0; }
+    document.getElementById(inputId).value = '';
+    saveState(); renderSummary();
+  }
+
+  function getListHTML(data, type) {
+    if (!data || (data.length === 0 && type !== 'category')) return `<div class="empty-state">Bosh.</div>`;
+    let html = '';
+    if (type === 'fixed') {
+      data.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => { html += `<div class="list-item"><div class="info"><div class="title">${item.name}</div><div class="sub">📅 ${item.date}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount">${item.amount} LEK</div><button class="delete-btn" onclick="deleteItem('fixed',${item.id})">🗑️</button></div></div>`; });
+    } else if (type === 'category') {
+      const cm = state.viewMonth, cy = state.viewYear;
+      const filteredData = data.filter(t => { const d=new Date(t.date); return d.getMonth()===cm && d.getFullYear()===cy; });
+      const grouped = {};
+      filteredData.forEach(t => { grouped[t.category] = (grouped[t.category]||0) + t.amount; });
+      state.categories.filter(c=>c!=='Të gjitha').forEach(c => { if(!grouped[c]) grouped[c]=0; });
+      Object.keys(grouped).forEach(cat => {
+        const limit = state.categoryLimits[cat]||0, spent = grouped[cat];
+        let pct = limit>0?(spent/limit)*100:0, cls='limit-none', txt='Pa limit';
+        if(limit>0){ if(pct>=100){cls='limit-red';txt=`Kaluar ${Math.round(pct)}%`}else if(pct>=70){cls='limit-orange';txt=`Kufiri ${Math.round(pct)}%`}else{cls='limit-green';txt=`Normal ${Math.round(pct)}%`} }
+        html += `<div class="list-item"><div class="info"><div class="title">${cat}</div><div class="sub" style="display:flex;align-items:center;gap:5px;">Limit: <input type="number" class="limit-input" value="${limit}" onchange="updateCategoryLimit('${cat}',this.value)"> LEK</div></div><div style="text-align:right;"><div class="sub"><strong>${spent} LEK</strong></div><span class="limit-badge ${cls}">${txt}</span></div></div>`;
+      });
+    } else if (type === 'goal' || type === 'debt') {
+      data.forEach((item,i) => {
+        const isDebt = type==='debt', isOwed = isDebt && item.type==='owed';
+        const btnTxt = isOwed?'Arkëtuar':'Paguar', btnCls = isOwed?'btn-primary':'btn-secondary';
+        const inputId = type==='goal'?`goalPay_${i}`:`debtPay_${i}`;
+        let title='', sub='', amt='';
+        if(type==='goal'){ const p=item.target>0?Math.round(item.current/item.target*100):0; title=`🎯 ${item.name}`; sub=`${item.current}/${item.target} (${p}%)`; amt=`<div class="amount" style="color:var(--secondary)">-${item.current} LEK</div>`; }
+        else { const c=isOwed?'var(--success)':'var(--accent)', pf=isOwed?'+':'-', bg=isOwed?'limit-blue':'limit-red', bt=isOwed?'Më detyrohen':'I detyrohem'; title=`${item.name} <span class="limit-badge ${bg}">${bt}</span>`; sub=item.desc||''; amt=`<div class="amount" style="color:${c}">${pf}${item.amount} LEK</div>`; }
+        html += `<div class="item-wrapper"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding-bottom:12px;margin-bottom:12px;"><div class="info"><div class="title">${title}</div><div class="sub">${sub}</div></div><div style="display:flex;align-items:center;gap:10px;">${amt}<button class="delete-btn" onclick="deleteItem('${type}',${item.id})">🗑️</button></div></div><div class="installment-group"><input type="number" id="${inputId}" class="installment-input" placeholder="Shuma"><button class="btn btn-sm ${btnCls}" onclick="payInstallment('${type}',${i})">${btnTxt}</button></div>`;
+        const pays = state.payments.filter(p=>p.targetId===item.id);
+        if(pays.length>0){ html+=`<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);font-size:11px;color:var(--text-light);font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Historiku:</div>`; pays.forEach(p=>{ const ir=p.type==='received',cl=ir?'var(--success)':'var(--accent)',pf=ir?'+':'-',ic=ir?'💵':'💸'; html+=`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span>${ic} ${p.date}</span><div style="display:flex;align-items:center;gap:8px;"><b style="color:${cl}">${pf}${p.amount}</b><button class="delete-btn" style="font-size:12px;padding:2px;width:28px;height:28px;" onclick="deletePayment(${p.id})">🗑️</button></div></div>`; }); }
+        html += `</div>`;
+      });
+    } else if (type === 'bonus') {
+      data.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => { html += `<div class="list-item"><div class="info"><div class="title">${item.name}</div><div class="sub">📅 ${item.date}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount" style="color:var(--success)">+${item.amount} LEK</div><button class="delete-btn" onclick="deleteItem('bonus',${item.id})">🗑️</button></div></div>`; });
+    }
+    return html;
+  }
+
+  function renderList(id, data, type) { document.getElementById(id).innerHTML = getListHTML(data, type); }
+
+  function renderExpensesView() {
+    renderList('fixedExpensesList', state.fixedExpenses, 'fixed');
+    renderList('categoryExpensesList', state.transactions, 'category');
+    renderTabs();
+    state.isCalendarView ? renderCalendarView() : renderTabContent();
+  }
+
+  function renderTabs() {
+    const list = document.getElementById('tabsList');
+    list.innerHTML = '';
+    state.categories.forEach(tab => {
+      const btn = document.createElement('button');
+      const isDef = tab === 'Të gjitha';
+      btn.className = `tab-btn ${tab===state.activeTab && !state.isCalendarView ? 'active':''}`;
+      const close = !isDef ? `<span class="tab-close" onclick="event.stopPropagation();deleteTab('${tab}')">×</span>` : '';
+      btn.innerHTML = `${tab} ${close}`;
+      btn.onclick = () => selectTab(tab);
+      list.appendChild(btn);
+    });
+    const calBtn = document.createElement('button');
+    calBtn.className = `tab-btn ${state.isCalendarView ? 'active':''}`;
+    calBtn.style.marginLeft = 'auto';
+    calBtn.innerHTML = `📅 Kalendari`;
+    calBtn.onclick = () => toggleCalendar();
+    list.appendChild(calBtn);
+  }
+
+  function selectTab(name) { state.activeTab=name; state.isCalendarView=false; localStorage.setItem('buxheti_state', JSON.stringify(state)); renderExpensesView(); }
+  function deleteTab(name) { if(confirm(`Fshi "${name}"?`)){state.categories=state.categories.filter(c=>c!==name); delete state.categoryLimits[name]; if(state.activeTab===name) state.activeTab='Të gjitha'; saveState(); renderExpensesView();} }
+  function addNewTab() { const n=prompt("Emri i kategorisë:"); if(n&&n.trim()&&!state.categories.includes(n.trim())){state.categories.push(n.trim());saveState();selectTab(n.trim());} }
+  function toggleCalendar() { state.isCalendarView=!state.isCalendarView; localStorage.setItem('buxheti_state', JSON.stringify(state)); renderExpensesView(); }
+
+  function renderTabContent() {
+    const content = document.getElementById('tabContent');
+    const cm = state.viewMonth, cy = state.viewYear;
+    let navHtml = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(cm)} ${cy}</span><button onclick="changeMonth(1)">❯</button></div>`;
+    let allItems = [...state.transactions];
+    if (state.activeTab === 'Të gjitha') {
+      state.fixedExpenses.forEach(f => allItems.push({ ...f, desc: f.name + ' (Fiks)', category: 'Fikse', paidBy: 'Auto', type: 'fixed' }));
+      state.bonuses.forEach(b => allItems.push({ ...b, desc: b.name + ' (Bonus)', category: 'Bonus', paidBy: 'Sistem', amount: -b.amount, type: 'bonus' })); 
+      allItems = allItems.filter(i => { const d = new Date(i.date); return d.getMonth() === cm && d.getFullYear() === cy; });
+      allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
+    } else {
+      allItems = allItems.filter(t => { const d = new Date(t.date); return t.category===state.activeTab && d.getMonth() === cm && d.getFullYear() === cy; });
+    }
+    const btnText = state.activeTab === 'Të gjitha' ? '+ Shto Shpenzim' : `+ Shto te "${state.activeTab}"`;
+    let html = navHtml;
+    html += `<div style="margin-bottom:18px;display:flex;justify-content:flex-end;"><button class="btn btn-primary" onclick="openModal('category','${state.activeTab}')">${btnText}</button></div>`;
+    if (allItems.length === 0) html += `<div class="empty-state">Asnjë shpenzim në ${getMonthName(cm)}.</div>`;
+    else {
+      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+      allItems.forEach(t => {
+        const isFixed = t.type === 'fixed'; const isBonus = t.type === 'bonus';
+        const delAction = isFixed ? `deleteItem('fixed',${t.id})` : (isBonus ? `deleteItem('bonus',${t.id})` : `deleteItem('transaction',${t.id})`);
+        let badge = ''; let amountDisplay = `-${t.amount} LEK`; let amountColor = 'var(--accent)';
+        if(isFixed) { badge = '<span style="background:#EDE7F6;color:#5E35B1;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">FIKSE</span>'; }
+        if(isBonus) { badge = '<span style="background:#E8F0EA;color:#3D5A45;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">BONUS</span>'; amountDisplay = `+${t.amount} LEK`; amountColor = 'var(--success)'; }
+        html += `<div class="list-item" style="border:1.5px solid var(--border);border-radius:14px;padding:14px;background:white;"><div class="info"><div class="title">${t.desc}${badge}</div><div class="sub">${t.category} • ${t.date} • ${t.paidBy || 'Auto'}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount" style="color:${amountColor}">${amountDisplay}</div><button class="delete-btn" onclick="${delAction}">🗑️</button></div></div>`;
+      });
+      html += '</div>';
+    }
+    content.innerHTML = html;
+  }
+
+  function renderCalendarView() {
+    const content = document.getElementById('tabContent');
+    const y = state.viewYear, m = state.viewMonth;
+    const firstDay = new Date(y,m,1).getDay(), daysInMonth = new Date(y,m+1,0).getDate();
+    const dn = ["H","M","M","E","P","Sh","D"];
+    let html = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(m)} ${y}</span><button onclick="changeMonth(1)">❯</button></div><div class="calendar-grid">`;
+    dn.forEach(d => html += `<div class="calendar-day-name">${d}</div>`);
+    for(let i=0;i<(firstDay===0?6:firstDay-1);i++) html += `<div class="calendar-day" style="visibility:hidden"></div>`;
+    for(let day=1;day<=daysInMonth;day++){
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      let dayNet = 0; let hasActivity = false;
+      state.transactions.filter(t=>t.date===ds).forEach(t => { dayNet -= t.amount; hasActivity=true; });
+      state.fixedExpenses.filter(f=>f.date===ds).forEach(f => { dayNet -= f.amount; hasActivity=true; });
+      state.bonuses.filter(b=>b.date===ds).forEach(b => { dayNet += b.amount; hasActivity=true; });
+      state.payments.filter(p=>p.date===ds).forEach(p => { if(p.type === 'received') dayNet += p.amount; else dayNet -= p.amount; hasActivity = true; });
+      const isSel = state.selectedDate === ds;
+      const colorClass = dayNet >= 0 ? 'var(--success)' : 'var(--accent)';
+      html += `<div class="calendar-day ${hasActivity?'has-transactions':''} ${isSel?'selected':''}" onclick="selectDay('${ds}')"><span>${day}</span>${hasActivity ? `<span class="day-total" style="color:${isSel?'white':colorClass}">${Math.abs(dayNet)}L</span>` : ''}</div>`;
+    }
+    html += `</div><div id="dayDetailsSection"></div>`;
+    content.innerHTML = html;
+    if(state.selectedDate) showDayDetails(state.selectedDate);
+  }
+
+  function selectDay(ds) { state.selectedDate=ds; renderCalendarView(); }
+
+  function showDayDetails(ds) {
+    const el = document.getElementById('dayDetailsSection');
+    let items = [];
+    state.transactions.filter(t=>t.date===ds).forEach(t => items.push({...t, type:'exp', sign:'-'}));
+    state.fixedExpenses.filter(f=>f.date===ds).forEach(f => items.push({desc:f.name+' (Fiks)', amount:f.amount, category:'Fikse', paidBy:'Auto', type:'fix', sign:'-'}));
+    state.bonuses.filter(b=>b.date===ds).forEach(b => items.push({desc:b.name+' (Bonus)', amount:b.amount, category:'Bonus', paidBy:'Sistem', type:'inc', sign:'+'}));
+    state.payments.filter(p=>p.date===ds).forEach(p => { const target = p.targetType==='goal' ? state.goals.find(g=>g.id===p.targetId) : state.debts.find(d=>d.id===p.targetId); const name = target ? target.name : 'Objektiv'; const isIn = p.type==='received'; items.push({ desc: (isIn ? 'Arkëtuar: ' : 'Paguar: ') + name, amount: p.amount, category: p.targetType==='goal'?'Kukuma':'Borxh', paidBy: 'Manual', type: isIn?'inc':'exp', sign: isIn?'+':'-' }); });
+    const total = items.reduce((s,i) => i.sign==='+' ? s+i.amount : s-i.amount, 0);
+    let html = `<div style="background:white;border-radius:16px;padding:20px;border:1.5px solid var(--border);margin-top:12px;box-shadow:var(--shadow);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);"><h3 style="margin:0; font-size:16px; font-weight:700;">📅 ${ds}</h3><span style="font-weight:800; font-size:18px; color:${total>=0?'var(--success)':'var(--accent)'}">Neto: ${total>0?'+':''}${total} LEK</span></div>`;
+    if(items.length===0) html += `<div class="empty-state" style="padding:15px;">Asnjë lëvizje.</div>`;
+    else { items.forEach(i => { const color = i.sign==='+' ? 'var(--success)' : 'var(--accent)'; html += `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);"><div style="flex:1;"><div style="font-weight:600; font-size:14px;">${i.desc}</div><div style="font-size:11px; color:var(--text-light); margin-top:2px;">${i.category} • ${i.paidBy}</div></div><div style="font-weight:700; color:${color}; font-size:15px;">${i.sign}${i.amount} LEK</div></div>`; }); }
+    html += `</div>`;
+    el.innerHTML = html;
+  }
+
+  function saveUser() { state.user = document.querySelector('input[name="user"]:checked').value; localStorage.setItem('buxheti_state', JSON.stringify(state)); }
+
+  let currentModalType = '';
+  function openModal(type, defCat='') {
+    currentModalType = type;
+    const t = document.getElementById('modalTitle'), b = document.getElementById('modalBody');
+    const today = new Date().toISOString().split('T')[0];
+    let html = '';
+    if(type==='fixed'){ t.innerText='Shto Shpenzim Fiks'; html=`<input id="m_name" placeholder="Emri"><input type="number" id="m_amount" placeholder="Shuma"><label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:6px;font-weight:600;">Data</label><input type="date" id="m_date" value="${today}">`; }
+    else if(type==='category'){ t.innerText='Shto Shpenzim'; const opts=state.categories.filter(c=>c!=='Të gjitha').map(c=>`<option ${c===defCat?'selected':''}>${c}</option>`).join(''); html=`<input id="m_desc" placeholder="Përshkrim"><input type="number" id="m_amount" placeholder="Shuma"><select id="m_category">${opts}</select><select id="m_paidBy"><option>Erald</option><option>Ira</option></select><input type="date" id="m_date" value="${today}">`; }
+    else if(type==='goal'){ t.innerText='Shto Kukuma'; html=`<input id="m_name" placeholder="Emri"><input type="number" id="m_target" placeholder="Synimi"><input type="number" id="m_current" placeholder="Aktualisht">`; }
+    else if(type==='debt'){ t.innerText='Shto Borxh'; html=`<select id="m_debtType"><option value="owe">Unë kam borxh</option><option value="owed">Më kanë borxh</option></select><input id="m_name" placeholder="Personi"><input type="number" id="m_amount" placeholder="Shuma"><input id="m_desc" placeholder="Shënim">`; }
+    else if(type==='bonus'){ t.innerText='Shto Bonus'; html=`<input id="m_name" placeholder="Emri"><input type="number" id="m_amount" placeholder="Shuma"><label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:6px;font-weight:600;">Data</label><input type="date" id="m_date" value="${today}">`; }
+    b.innerHTML = html;
+    document.getElementById('modalSaveBtn').style.display = 'block';
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); document.getElementById('modalSaveBtn').style.display='block'; }
+  function saveModal() {
+    const id = Date.now()+Math.random();
+    if(currentModalType==='fixed'){ const n=document.getElementById('m_name').value, a=parseFloat(document.getElementById('m_amount').value), d=document.getElementById('m_date').value; if(n&&a&&d) state.fixedExpenses.push({id,name:n,amount:a,date:d}); }
+    else if(currentModalType==='category'){ const d=document.getElementById('m_desc').value,a=parseFloat(document.getElementById('m_amount').value),c=document.getElementById('m_category').value,p=document.getElementById('m_paidBy').value,dt=document.getElementById('m_date').value; if(d&&a) state.transactions.push({id,desc:d,amount:a,category:c,paidBy:p,date:dt}); }
+    else if(currentModalType==='goal'){ const n=document.getElementById('m_name').value,t=parseFloat(document.getElementById('m_target').value),c=parseFloat(document.getElementById('m_current').value)||0; if(n&&t) state.goals.push({id,name:n,target:t,current:c}); }
+    else if(currentModalType==='debt'){ const ty=document.getElementById('m_debtType').value,n=document.getElementById('m_name').value,a=parseFloat(document.getElementById('m_amount').value),d=document.getElementById('m_desc').value; if(n&&a) state.debts.push({id,name:n,amount:a,originalAmount:a,desc:d,type:ty}); }
+    else if(currentModalType==='bonus'){ const n=document.getElementById('m_name').value, a=parseFloat(document.getElementById('m_amount').value), d=document.getElementById('m_date').value; if(n&&a&&d) state.bonuses.push({id,name:n,amount:a,date:d}); }
+    saveState(); closeModal(); renderAll();
+  }
+
+  loadState();
 </script>
-<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
-<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
 </html>
