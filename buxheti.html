@@ -301,10 +301,33 @@
     const pwd = document.getElementById('syncPasswordInput').value.trim();
     if (!pwd) return alert("Vendosni fjalëkalim!");
     if (!isFirebaseInitialized) return alert("Firebase nuk është konfiguruar! Shiko kodin.");
-    state.syncPassword = pwd; state.isSynced = !state.isSynced;
-    if (state.isSynced) { startRealtimeSync(); db.collection('budgets').doc(pwd).get().then(doc => { if (!doc.exists) saveState(); }); }
-    else { if (unsubscribe) unsubscribe(); updateSyncUI(false); }
-    saveState();
+    state.syncPassword = pwd;
+    const activating = !state.isSynced;
+    state.isSynced = activating;
+    if (activating) {
+      // E RËNDËSISHME: para se të aktivizojmë, kontrollojmë nëse ka tashmë të dhëna online.
+      // Nëse ka, i MARRIM ato (mos i mbishkruajmë me gjendjen bosh lokale).
+      db.collection('budgets').doc(pwd).get().then(doc => {
+        if (doc.exists) {
+          const r = doc.data();
+          state.transactions = r.transactions || []; state.fixedExpenses = r.fixedExpenses || [];
+          state.goals = r.goals || []; state.debts = r.debts || []; state.bonuses = r.bonuses || [];
+          state.payments = r.payments || []; state.budgets = r.budgets || { total: 0 };
+          state.categories = r.categories || state.categories; state.categoryLimits = r.categoryLimits || {};
+          localStorage.setItem('buxheti_state', JSON.stringify(state));
+          renderAll();
+        } else {
+          // S'ka të dhëna online ende — kjo është hera e parë, ruaj gjendjen aktuale si fillestare.
+          saveState();
+        }
+        startRealtimeSync();
+        updateSyncUI(true);
+      });
+    } else {
+      if (unsubscribe) unsubscribe();
+      updateSyncUI(false);
+      localStorage.setItem('buxheti_state', JSON.stringify(state));
+    }
   }
 
   function updateSyncUI(connected = state.isSynced) {
