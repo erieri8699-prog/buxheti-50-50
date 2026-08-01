@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Buxheti</title>
 
-<!-- FIREBASE SDK - KJO PJESË MUNGONTE DHE SHKAKTONTE GABIMIN -->
+<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
@@ -119,15 +119,13 @@
       <h2>Buxheti mujor</h2>
       <div class="stats-grid">
         <div class="stat-card"><div class="label">Buxheti Total</div><input type="number" id="budgetTotal" placeholder="0" onchange="saveBudgets()"></div>
-        
-        <!-- Erald Mbetur - Klikueshëm -->
+
         <div class="stat-card clickable" onclick="showPersonRemainingDetails('Erald')">
           <div class="label">Erald (Mbetur)</div>
           <div class="value" id="eraldRemaining">0 LEK</div>
           <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Detaje</div>
         </div>
-        
-        <!-- Ira Mbetur - Klikueshëm -->
+
         <div class="stat-card clickable" onclick="showPersonRemainingDetails('Ira')">
           <div class="label">Ira (Mbetur)</div>
           <div class="value" id="iraRemaining">0 LEK</div>
@@ -136,36 +134,33 @@
       </div>
       <button class="btn btn-primary" style="width:100%" onclick="saveBudgets()">Ruaj buxhetet</button>
     </div>
-    
+
     <div class="stats-grid">
-      <!-- Balanca - Klikueshme për Historik Kronologjik -->
       <div class="stat-card clickable" onclick="showFullChronologicalHistory()">
         <div class="label">Balanca</div>
         <div class="value" id="statBalance">0 LEK</div>
         <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Kliko për historik</div>
       </div>
-      
-      <!-- Erald Paguar - Klikueshëm -->
+
       <div class="stat-card clickable" onclick="showPersonPaidDetails('Erald')">
         <div class="label">Erald paguar</div>
         <div class="value" id="statEraldPaid">0 LEK</div>
         <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Detaje</div>
       </div>
-      
-      <!-- Ira Paguar - Klikueshëm -->
+
       <div class="stat-card clickable" onclick="showPersonPaidDetails('Ira')">
         <div class="label">Ira paguar</div>
         <div class="value" id="statIraPaid">0 LEK</div>
         <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Detaje</div>
       </div>
-      
+
       <div class="stat-card clickable" onclick="openMonthlyOverview()">
         <div class="label">Lëvizjet e Muajit</div>
         <div class="value" id="statTransCount">0</div>
         <div style="font-size:10px; color:var(--primary); margin-top:4px; font-weight:600;">👆 Pasqyrë</div>
       </div>
     </div>
-    
+
     <div class="card">
       <h2>Fondet & Objektivat <button class="btn btn-sm btn-outline" onclick="handleFundAdd()">+ Shto</button></h2>
       <div class="fund-tabs-header">
@@ -221,7 +216,7 @@
     <div class="card">
       <h2>Menaxhimi i Muajit</h2>
       <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Muaji aktual: <strong id="currentPeriodLabel">—</strong></p>
-      <div class="note" style="margin-bottom:14px;">Në datën 1 të çdo muaji, buxheti, shpenzimet, fikset dhe bonuset zerohen automatikisht. Kukumaja dhe borxhet vazhdojnë. Muaji i mbyllur ruhet në arkiv.</div>
+      <div class="note" style="margin-bottom:14px;">Në datën 1 të çdo muaji, buxheti, shpenzimet, fikset dhe bonuset zerohen automatikisht. Kukumaja dhe borxhet e pashlyera vazhdojnë. Borxhet e shlyera (0 LEK) kalojnë në arkiv. Muaji i mbyllur ruhet në arkiv.</div>
       <button class="btn btn-outline" style="width:100%;" onclick="manualCloseMonth()">Mbyll Muajin Tani (manualisht)</button>
     </div>
 
@@ -272,13 +267,11 @@
     currentPeriod: null, archives: []
   };
 
-  // Kthen periudhën aktuale reale në formatin "VITI-MUAJI" p.sh. "2026-08"
   function getRealPeriod() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   }
 
-  // Emri i muajit në shqip nga një periudhë "2026-07"
   function periodLabel(period) {
     const muajt = ['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
     const [y,m] = period.split('-');
@@ -286,11 +279,8 @@
   }
 
   // MBYLLJA E MUAJIT: arkivon të dhënat e muajit të mbyllur dhe zeron ato periodike.
-  // Kukumaja (goals) dhe borxhet (debts) MBETEN të pandryshuara, bashkë me historikun e pagesave të tyre.
+  // Kukumaja (goals) dhe borxhet e PASHLYERA MBETEN. Borxhet e shlyera (0 LEK) kalojnë në arkiv.
   function closeMonth(periodToArchive) {
-    // Bëj një foto (snapshot) të muajit që po mbyllet.
-    // Pagesat e borxheve/kukumajës i përfshijmë në arkiv VETËM për referencë historike të atij muaji,
-    // por NUK i heqim nga state (mbeten aktive që historiku të vazhdojë i dukshëm).
     const snapshot = {
       period: periodToArchive,
       budgetTotal: state.budgets.total || 0,
@@ -300,6 +290,14 @@
       payments: JSON.parse(JSON.stringify(state.payments)),
       archivedAt: new Date().toISOString()
     };
+
+    // Borxhet e shlyera plotësisht (amount <= 0) i heqim nga lista aktive
+    // dhe i ruajmë në arkivin e këtij muaji për konsultim.
+    const paidOffDebts = state.debts.filter(d => d.amount <= 0);
+    if (paidOffDebts.length) {
+      snapshot.closedDebts = JSON.parse(JSON.stringify(paidOffDebts));
+    }
+
     if (!state.archives) state.archives = [];
     state.archives.unshift(snapshot); // më i riu në krye
 
@@ -308,36 +306,32 @@
     state.transactions = [];
     state.fixedExpenses = [];
     state.bonuses = [];
-    // Pagesat e borxheve dhe kukumajës MBETEN (që historiku i tyre të vazhdojë i dukshëm).
-    // Fshihen vetëm pagesa të tjera (nëse ka ndonjë tip tjetër në të ardhmen).
     state.payments = (state.payments || []).filter(p => p.targetType === 'debt' || p.targetType === 'goal');
 
-    // Kukumaja (goals) dhe borxhet (debts) NUK preken — vazhdojnë të pandryshuara.
+    // Hiq borxhet e shlyera nga lista aktive — nuk bartem më në muajin pasardhës.
+    state.debts = state.debts.filter(d => d.amount > 0);
+
+    // Kukumaja (goals) dhe borxhet e pashlyera NUK preken — vazhdojnë të pandryshuara.
   }
 
-  // Kontrollon nëse ka ndryshuar muaji dhe, nëse po, mbyll muajt e ndërmjetëm.
   function checkMonthRollover() {
     const real = getRealPeriod();
     if (!state.currentPeriod) {
-      // Hera e parë — thjesht vendos periudhën aktuale, pa arkivuar asgjë.
       state.currentPeriod = real;
       return false;
     }
-    if (state.currentPeriod === real) return false; // po njëjti muaj, s'ka nevojë
+    if (state.currentPeriod === real) return false;
 
-    // Muaji ka ndryshuar — mbyll muajin(t) e kaluar.
-    // (Zakonisht vetëm një, por mbron edhe rastin kur appi s'është hapur për disa muaj.)
     let guard = 0;
     while (state.currentPeriod !== real && guard < 120) {
       closeMonth(state.currentPeriod);
-      // Kalo te muaji pasardhës
       let [y,m] = state.currentPeriod.split('-').map(Number);
       m++; if (m > 12) { m = 1; y++; }
       state.currentPeriod = `${y}-${String(m).padStart(2,'0')}`;
       guard++;
     }
     state.currentPeriod = real;
-    return true; // ka ndodhur mbyllje
+    return true;
   }
 
   function loadState() {
@@ -354,7 +348,6 @@
       addIdsAndDates(state.transactions); addIdsAndDates(state.fixedExpenses); addIdsAndDates(state.goals); addIdsAndDates(state.debts); addIdsAndDates(state.bonuses);
       state.debts.forEach(d => { if(!d.originalAmount) d.originalAmount = d.amount; });
     }
-    // Kontrollo nëse ka ndryshuar muaji (zerim automatik në datën 1)
     const didRollover = checkMonthRollover();
     if (didRollover) saveState();
     updateSyncUI(); renderAll();
@@ -392,8 +385,6 @@
     const activating = !state.isSynced;
     state.isSynced = activating;
     if (activating) {
-      // E RËNDËSISHME: para se të aktivizojmë, kontrollojmë nëse ka tashmë të dhëna online.
-      // Nëse ka, i MARRIM ato (mos i mbishkruajmë me gjendjen bosh lokale).
       db.collection('budgets').doc(pwd).get().then(doc => {
         if (doc.exists) {
           const r = doc.data();
@@ -403,12 +394,10 @@
           state.categories = r.categories || state.categories; state.categoryLimits = r.categoryLimits || {};
           if (r.archives) state.archives = r.archives;
           if (r.currentPeriod) state.currentPeriod = r.currentPeriod;
-          // Kontrollo mbylljen e muajit edhe pasi marrim të dhënat nga tjetri
           checkMonthRollover();
           localStorage.setItem('buxheti_state', JSON.stringify(state));
           renderAll();
         } else {
-          // S'ka të dhëna online ende — kjo është hera e parë, ruaj gjendjen aktuale si fillestare.
           saveState();
         }
         startRealtimeSync();
@@ -443,10 +432,9 @@
   // ---- ARKIVI DHE MBYLLJA MANUALE E MUAJIT ----
   function manualCloseMonth() {
     const label = state.currentPeriod ? periodLabel(state.currentPeriod) : 'muajin aktual';
-    if (!confirm(`Do të mbyllet ${label}?\n\nBuxheti, shpenzimet, fikset dhe bonuset do të zerohen dhe do të ruhen në arkiv. Kukumaja dhe borxhet vazhdojnë të pandryshuara.\n\nKjo nuk mund të zhbëhet.`)) return;
+    if (!confirm(`Do të mbyllet ${label}?\n\nBuxheti, shpenzimet, fikset dhe bonuset do të zerohen dhe do të ruhen në arkiv. Borxhet e shlyera (0 LEK) kalojnë në arkiv, ndërsa kukumaja dhe borxhet e pashlyera vazhdojnë.\n\nKjo nuk mund të zhbëhet.`)) return;
     const periodToClose = state.currentPeriod || getRealPeriod();
     closeMonth(periodToClose);
-    // Pas mbylljes manuale, periudha aktuale bëhet muaji real i tanishëm
     state.currentPeriod = getRealPeriod();
     saveState();
     renderAll();
@@ -503,6 +491,10 @@
       html += `<h4 style="margin:12px 0 6px;">💰 Bonuse</h4>`;
       html += a.bonuses.map(b => `<div class="item-sub" style="display:flex; justify-content:space-between; padding:4px 0;"><span>${b.name} <span style="color:var(--text-light)">(${b.paidBy||'—'})</span></span><span>${b.amount} L</span></div>`).join('');
     }
+    if ((a.closedDebts||[]).length) {
+      html += `<h4 style="margin:12px 0 6px;">✅ Borxhe të mbyllura</h4>`;
+      html += a.closedDebts.map(d => `<div class="item-sub" style="display:flex; justify-content:space-between; padding:4px 0;"><span>${d.name} <span style="color:var(--text-light)">(${d.type==='owed'?'më detyroheshin':'i detyrohesha'})</span></span><span>${d.originalAmount||0} L</span></div>`).join('');
+    }
 
     document.getElementById('modalTitle').innerText = `Arkiv: ${periodLabel(a.period)}`;
     document.getElementById('modalBody').innerHTML = html;
@@ -510,39 +502,29 @@
     document.getElementById('modalOverlay').classList.add('active');
   }
 
-  // LOGJIKA E SAKTË E BALANCËS REALE
   function calculateBalance() {
-    // Hyrjet totale reale
     const bonusTotal = state.bonuses.reduce((s, b) => s + b.amount, 0);
     const receivedTotal = state.payments.filter(p => p.type === 'received').reduce((s, p) => s + p.amount, 0);
-    
-    // Daljet totale reale (paratë që kanë dalë fizikisht)
     const transTotal = state.transactions.reduce((s, t) => s + t.amount, 0);
     const fixedTotal = state.fixedExpenses.reduce((s, f) => s + f.amount, 0);
     const debtsPaidTotal = state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').reduce((s, p) => s + p.amount, 0);
     const goalsPaidTotal = state.payments.filter(p => p.targetType === 'goal' && p.type === 'paid').reduce((s, p) => s + p.amount, 0);
-
-    // Formula: Buxheti Fillestar + Hyrjet Reale - Daljet Reale
-    // Shënim: goalsTotal (rezerva) NUK zbritet këtu sepse paratë janë ende në llogari
     const totalIn = (state.budgets.total || 0) + bonusTotal + receivedTotal;
     const totalOut = transTotal + fixedTotal + debtsPaidTotal + goalsPaidTotal;
-
     return totalIn - totalOut;
   }
 
   function renderSummary() {
     document.getElementById('budgetTotal').value = state.budgets.total || '';
-    
+
     let eraldSpent = 0, iraSpent = 0;
     let eraldBonus = 0, iraBonus = 0;
 
-    // 1. Transaksione Normale
     state.transactions.forEach(t => {
       if (t.paidBy === 'Erald') eraldSpent += t.amount;
       if (t.paidBy === 'Ira') iraSpent += t.amount;
     });
 
-    // 2. Shpenzime Fikse
     state.fixedExpenses.forEach(f => {
       const p = f.paidBy || 'Auto';
       if (p === 'Erald') eraldSpent += f.amount;
@@ -550,21 +532,18 @@
       else { eraldSpent += f.amount/2; iraSpent += f.amount/2; }
     });
 
-    // 3. Pagesat e Borxheve/Kukumës
     state.payments.forEach(p => {
       if (p.type === 'paid') {
-        const payer = p.paidBy || 'Erald'; 
+        const payer = p.paidBy || 'Erald';
         if (payer === 'Erald') eraldSpent += p.amount;
         if (payer === 'Ira') iraSpent += p.amount;
       } else if (p.type === 'received') {
-        // Kësti i ARKËTUAR shtohet si bonus
-        const receiver = p.paidBy || state.user; 
+        const receiver = p.paidBy || state.user;
         if (receiver === 'Erald') eraldBonus += p.amount;
         if (receiver === 'Ira') iraBonus += p.amount;
       }
     });
 
-    // 4. Bonuset manuale
     state.bonuses.forEach(b => {
       const r = b.paidBy || 'Sistem';
       if (r === 'Erald') eraldBonus += b.amount;
@@ -573,34 +552,27 @@
     });
 
     const half = (state.budgets.total || 0) / 2;
-    // Formula individuale: Gjysma - Shpenzimet + (Bonuset + Këstet e Arkëtuara)
     state.budgets.erald = half - eraldSpent + eraldBonus;
     state.budgets.ira = half - iraSpent + iraBonus;
 
     document.getElementById('eraldRemaining').innerText = `${Math.round(state.budgets.erald)} LEK`;
     document.getElementById('iraRemaining').innerText = `${Math.round(state.budgets.ira)} LEK`;
-    
-    // "Ka paguar" tregon VETEM shpenzimet reale
     document.getElementById('statEraldPaid').innerText = `${Math.round(eraldSpent)} LEK`;
     document.getElementById('statIraPaid').innerText = `${Math.round(iraSpent)} LEK`;
-    
     document.getElementById('statBalance').innerText = `${Math.round(calculateBalance())} LEK`;
-    
+
     const now = new Date();
     const cnt = state.transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
     document.getElementById('statTransCount').innerText = cnt;
-    
+
     renderList('fixedExpensesList', state.fixedExpenses, 'fixed');
     renderList('categoryExpensesList', state.transactions, 'category');
     renderFundTabContent();
   }
 
-  // HISTORIKU KRONOLOGJIK I PLOTË (Kur klikon Balancën)
   function showFullChronologicalHistory() {
     let allEvents = [];
     const initialBudget = state.budgets.total || 0;
-
-    // Gjejmë datën më të hershme për ta vendosur buxhetin në krye
     let earliestDate = new Date().toISOString().split('T')[0];
     const allDates = [
       ...state.transactions.map(t => t.date),
@@ -608,35 +580,23 @@
       ...state.bonuses.map(b => b.date),
       ...state.payments.map(p => p.date)
     ].filter(d => d).sort();
-    
+
     if (allDates.length > 0) earliestDate = allDates[0];
 
-    // 1. Buxheti Fillestar si ngjarja e parë
-    allEvents.push({ 
-      desc: '💰 Buxheti Fillestar', 
-      sub: 'Pika e nisjes', 
-      amount: initialBudget, 
-      date: earliestDate,
-      type: 'start',
-      isInitial: true
-    });
+    allEvents.push({ desc: '💰 Buxheti Fillestar', sub: 'Pika e nisjes', amount: initialBudget, date: earliestDate, type: 'start', isInitial: true });
 
-    // 2. Transaksione Normale (Zbritje)
     state.transactions.forEach(t => {
       allEvents.push({ desc: t.desc, sub: `${t.category} • ${t.paidBy}`, amount: -t.amount, date: t.date, type: 'exp' });
     });
 
-    // 3. Shpenzime Fikse (Zbritje)
     state.fixedExpenses.forEach(f => {
       allEvents.push({ desc: f.name + ' (Fiks)', sub: `Fiks • ${f.paidBy || 'Auto'}`, amount: -f.amount, date: f.date, type: 'fix' });
     });
 
-    // 4. Bonuse (Shtim)
     state.bonuses.forEach(b => {
       allEvents.push({ desc: b.name + ' (Bonus)', sub: `Bonus • ${b.paidBy || 'Sistem'}`, amount: b.amount, date: b.date, type: 'inc' });
     });
 
-    // 5. Pagesa Kukumash/Borxhesh (Zbritje ose Shtim)
     state.payments.forEach(p => {
       const target = p.targetType === 'goal' ? state.goals.find(g => g.id === p.targetId) : state.debts.find(d => d.id === p.targetId);
       const name = target ? target.name : 'Objektiv';
@@ -650,9 +610,8 @@
       });
     });
 
-    // Rendit kronologjikisht (më të vjetrat në fillim)
     allEvents.sort((a, b) => {
-      if (a.isInitial) return -1; 
+      if (a.isInitial) return -1;
       if (b.isInitial) return 1;
       return new Date(a.date) - new Date(b.date);
     });
@@ -676,7 +635,7 @@
         const sign = isPlus ? '+' : '';
         const icon = isStart ? '🏦' : (isPlus ? '📈' : '📉');
         const amountDisplay = isStart ? `${Math.round(ev.amount)} LEK` : `${sign}${Math.round(ev.amount)} LEK`;
-        
+
         html += `<div class="list-item" style="border:1px solid ${isStart ? 'var(--secondary)' : 'var(--border)'}; border-radius:12px; padding:12px; background:${isStart ? 'var(--primary-light)' : 'white'};">
           <div class="info">
             <div class="title" style="font-size:14px; color:${isStart ? 'var(--secondary)' : 'var(--text)'};">${icon} ${ev.desc}</div>
@@ -694,7 +653,6 @@
     document.getElementById('modalOverlay').classList.add('active');
   }
 
-  // DETAJET E BUXHETIT TË MBETUR (Shtesa vs Zbritje)
   function showPersonRemainingDetails(person) {
     const half = (state.budgets.total || 0) / 2;
     let spent = 0, added = 0;
@@ -755,7 +713,6 @@
     document.getElementById('modalOverlay').classList.add('active');
   }
 
-  // DETAJET E SHPENZIMEVE (Çfarë ka paguar)
   function showPersonPaidDetails(person) {
     let items = [];
     let total = 0;
@@ -922,7 +879,6 @@
       allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
     } else { allItems = allItems.filter(t => { const d = new Date(t.date); return t.category===state.activeTab && d.getMonth() === cm && d.getFullYear() === cy; }); }
     const btnText = state.activeTab === 'Të gjitha' ? '+ Shto Shpenzim' : `+ Shto te "${state.activeTab}"`;
-    // Te muajt e arkivuar s'lejohet shtim/fshirje (muaji është mbyllur)
     const addBtnHtml = md.isArchived ? '' : `<div style="margin-bottom:18px;display:flex;justify-content:flex-end;"><button class="btn btn-primary" onclick="openModal('category','${state.activeTab}')">${btnText}</button></div>`;
     let html = navHtml + addBtnHtml;
     if (allItems.length === 0) html += `<div class="empty-state">Asnjë shpenzim në ${getMonthName(cm)}.</div>`;
@@ -933,8 +889,7 @@
         const delAction = isFixed ? `deleteItem('fixed',${t.id})` : (isBonus ? `deleteItem('bonus',${t.id})` : `deleteItem('transaction',${t.id})`);
         let badge = ''; let amountDisplay = `-${t.amount} LEK`; let amountColor = 'var(--accent)';
         if(isFixed) badge = '<span style="background:#EBF8FF;color:#2B6CB0;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">FIKSE</span>';
-        if(isBonus) { badge = '<span style="background:#E6F7EF;color:#2F855A;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">BONUS</span>'; amountDisplay = `+${t.amount} LEK`; amountColor = 'var(--success)'; }
-        // Fshi butonin e fshirjes për muajt e arkivuar
+        if(isBonus) { badge = '<span style="background:#E6F7EF;color:#2F855A;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">BONUS</span>'; amountDisplay = `+${Math.abs(t.amount)} LEK`; amountColor = 'var(--success)'; }
         const delBtn = md.isArchived ? '' : `<button class="delete-btn" onclick="${delAction}">🗑️</button>`;
         html += `<div class="list-item" style="border:1.5px solid var(--border);border-radius:14px;padding:14px;background:white;"><div class="info"><div class="title">${t.desc}${badge}</div><div class="sub">${t.category} • ${t.date} • ${t.paidBy || 'Auto'}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount" style="color:${amountColor}">${amountDisplay}</div>${delBtn}</div></div>`;
       });
@@ -943,8 +898,6 @@
     content.innerHTML = html;
   }
 
-  // Kthen të dhënat e një muaji të caktuar: nga listat aktive nëse s'është arkivuar,
-  // ose nga arkivi nëse muaji është mbyllur. Kështu kalendari shfaq edhe muajt e kaluar.
   function getMonthData(y, m) {
     const period = `${y}-${String(m+1).padStart(2,'0')}`;
     const arch = (state.archives || []).find(a => a.period === period);
@@ -953,7 +906,6 @@
         transactions: arch.transactions || [],
         fixedExpenses: arch.fixedExpenses || [],
         bonuses: arch.bonuses || [],
-        // pagesat aktive përdoren gjithmonë (borxhe/kukuma s'arkivohen), filtruar sipas datës më poshtë
         payments: state.payments || [],
         isArchived: true
       };
@@ -993,7 +945,6 @@
   function selectDay(ds) { state.selectedDate=ds; renderCalendarView(); }
   function showDayDetails(ds) {
     const el = document.getElementById('dayDetailsSection'); let items = [];
-    // Përcakto nga cili muaj vjen kjo datë (aktiv apo arkiv)
     const dObj = new Date(ds);
     const md = getMonthData(dObj.getFullYear(), dObj.getMonth());
     md.transactions.filter(t=>t.date===ds).forEach(t => items.push({...t, type:'exp', sign:'-'}));
