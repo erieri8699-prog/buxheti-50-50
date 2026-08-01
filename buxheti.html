@@ -217,6 +217,18 @@
       <button class="btn btn-primary" style="width:100%;" onclick="toggleSync()" id="syncBtn">Aktivizo Sinkronizimin</button>
       <p id="syncError" style="color:var(--accent); font-size:12px; margin-top:12px; text-align:center; display:none; font-weight:600;"></p>
     </div>
+
+    <div class="card">
+      <h2>Menaxhimi i Muajit</h2>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Muaji aktual: <strong id="currentPeriodLabel">—</strong></p>
+      <div class="note" style="margin-bottom:14px;">Në datën 1 të çdo muaji, buxheti, shpenzimet, fikset dhe bonuset zerohen automatikisht. Kukumaja dhe borxhet vazhdojnë. Muaji i mbyllur ruhet në arkiv.</div>
+      <button class="btn btn-outline" style="width:100%;" onclick="manualCloseMonth()">Mbyll Muajin Tani (manualisht)</button>
+    </div>
+
+    <div class="card">
+      <h2>Arkivi i Muajve</h2>
+      <div id="archivesList"></div>
+    </div>
   </div>
 </div>
 
@@ -256,14 +268,84 @@
     transactions: [], fixedExpenses: [], categories: ['Të gjitha', 'Ushqim', 'Faturat', 'Transport', 'Argëtim'],
     categoryLimits: {}, goals: [], debts: [], bonuses: [], payments: [],
     syncPassword: '', isSynced: false, activeTab: 'Të gjitha', isCalendarView: false, selectedDate: null, activeFundTab: 'goal',
-    viewYear: new Date().getFullYear(), viewMonth: new Date().getMonth()
+    viewYear: new Date().getFullYear(), viewMonth: new Date().getMonth(),
+    currentPeriod: null, archives: []
   };
+
+  // Kthen periudhën aktuale reale në formatin "VITI-MUAJI" p.sh. "2026-08"
+  function getRealPeriod() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  // Emri i muajit në shqip nga një periudhë "2026-07"
+  function periodLabel(period) {
+    const muajt = ['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
+    const [y,m] = period.split('-');
+    return `${muajt[parseInt(m)-1]} ${y}`;
+  }
+
+  // MBYLLJA E MUAJIT: arkivon të dhënat e muajit të mbyllur dhe zeron ato periodike.
+  // Kukumaja (goals) dhe borxhet (debts) MBETEN të pandryshuara, bashkë me historikun e pagesave të tyre.
+  function closeMonth(periodToArchive) {
+    // Bëj një foto (snapshot) të muajit që po mbyllet.
+    // Pagesat e borxheve/kukumajës i përfshijmë në arkiv VETËM për referencë historike të atij muaji,
+    // por NUK i heqim nga state (mbeten aktive që historiku të vazhdojë i dukshëm).
+    const snapshot = {
+      period: periodToArchive,
+      budgetTotal: state.budgets.total || 0,
+      transactions: JSON.parse(JSON.stringify(state.transactions)),
+      fixedExpenses: JSON.parse(JSON.stringify(state.fixedExpenses)),
+      bonuses: JSON.parse(JSON.stringify(state.bonuses)),
+      payments: JSON.parse(JSON.stringify(state.payments)),
+      archivedAt: new Date().toISOString()
+    };
+    if (!state.archives) state.archives = [];
+    state.archives.unshift(snapshot); // më i riu në krye
+
+    // ZERO ato që janë periodike (rifillojnë çdo muaj)
+    state.budgets = { total: 0 };
+    state.transactions = [];
+    state.fixedExpenses = [];
+    state.bonuses = [];
+    // Pagesat e borxheve dhe kukumajës MBETEN (që historiku i tyre të vazhdojë i dukshëm).
+    // Fshihen vetëm pagesa të tjera (nëse ka ndonjë tip tjetër në të ardhmen).
+    state.payments = (state.payments || []).filter(p => p.targetType === 'debt' || p.targetType === 'goal');
+
+    // Kukumaja (goals) dhe borxhet (debts) NUK preken — vazhdojnë të pandryshuara.
+  }
+
+  // Kontrollon nëse ka ndryshuar muaji dhe, nëse po, mbyll muajt e ndërmjetëm.
+  function checkMonthRollover() {
+    const real = getRealPeriod();
+    if (!state.currentPeriod) {
+      // Hera e parë — thjesht vendos periudhën aktuale, pa arkivuar asgjë.
+      state.currentPeriod = real;
+      return false;
+    }
+    if (state.currentPeriod === real) return false; // po njëjti muaj, s'ka nevojë
+
+    // Muaji ka ndryshuar — mbyll muajin(t) e kaluar.
+    // (Zakonisht vetëm një, por mbron edhe rastin kur appi s'është hapur për disa muaj.)
+    let guard = 0;
+    while (state.currentPeriod !== real && guard < 120) {
+      closeMonth(state.currentPeriod);
+      // Kalo te muaji pasardhës
+      let [y,m] = state.currentPeriod.split('-').map(Number);
+      m++; if (m > 12) { m = 1; y++; }
+      state.currentPeriod = `${y}-${String(m).padStart(2,'0')}`;
+      guard++;
+    }
+    state.currentPeriod = real;
+    return true; // ka ndodhur mbyllje
+  }
 
   function loadState() {
     const saved = localStorage.getItem('buxheti_state');
     if (saved) {
       state = { ...state, ...JSON.parse(saved) };
       if (!state.payments) state.payments = [];
+      if (!state.archives) state.archives = [];
       const today = new Date().toISOString().split('T')[0];
       const addIdsAndDates = (arr) => arr.forEach((item, idx) => {
         if(!item.id) item.id = Date.now() + idx + Math.random();
@@ -272,6 +354,9 @@
       addIdsAndDates(state.transactions); addIdsAndDates(state.fixedExpenses); addIdsAndDates(state.goals); addIdsAndDates(state.debts); addIdsAndDates(state.bonuses);
       state.debts.forEach(d => { if(!d.originalAmount) d.originalAmount = d.amount; });
     }
+    // Kontrollo nëse ka ndryshuar muaji (zerim automatik në datën 1)
+    const didRollover = checkMonthRollover();
+    if (didRollover) saveState();
     updateSyncUI(); renderAll();
     if (state.isSynced && state.syncPassword && isFirebaseInitialized) startRealtimeSync();
   }
@@ -291,6 +376,8 @@
         state.goals = r.goals || []; state.debts = r.debts || []; state.bonuses = r.bonuses || [];
         state.payments = r.payments || []; state.budgets = r.budgets || { total: 0 };
         state.categories = r.categories || state.categories; state.categoryLimits = r.categoryLimits || {};
+        if (r.archives) state.archives = r.archives;
+        if (r.currentPeriod) state.currentPeriod = r.currentPeriod;
         localStorage.setItem('buxheti_state', JSON.stringify(state)); renderAll();
       }
     }, (err) => { document.getElementById('syncError').innerText = "Gabim: " + err.message; document.getElementById('syncError').style.display = 'block'; });
@@ -314,6 +401,10 @@
           state.goals = r.goals || []; state.debts = r.debts || []; state.bonuses = r.bonuses || [];
           state.payments = r.payments || []; state.budgets = r.budgets || { total: 0 };
           state.categories = r.categories || state.categories; state.categoryLimits = r.categoryLimits || {};
+          if (r.archives) state.archives = r.archives;
+          if (r.currentPeriod) state.currentPeriod = r.currentPeriod;
+          // Kontrollo mbylljen e muajit edhe pasi marrim të dhënat nga tjetri
+          checkMonthRollover();
           localStorage.setItem('buxheti_state', JSON.stringify(state));
           renderAll();
         } else {
@@ -346,7 +437,77 @@
   function renderAll() {
     if (state.currentSection === 'summary') renderSummary();
     if (state.currentSection === 'expenses') renderExpensesView();
-    if (state.currentSection === 'settings') updateSyncUI();
+    if (state.currentSection === 'settings') { updateSyncUI(); renderArchives(); }
+  }
+
+  // ---- ARKIVI DHE MBYLLJA MANUALE E MUAJIT ----
+  function manualCloseMonth() {
+    const label = state.currentPeriod ? periodLabel(state.currentPeriod) : 'muajin aktual';
+    if (!confirm(`Do të mbyllet ${label}?\n\nBuxheti, shpenzimet, fikset dhe bonuset do të zerohen dhe do të ruhen në arkiv. Kukumaja dhe borxhet vazhdojnë të pandryshuara.\n\nKjo nuk mund të zhbëhet.`)) return;
+    const periodToClose = state.currentPeriod || getRealPeriod();
+    closeMonth(periodToClose);
+    // Pas mbylljes manuale, periudha aktuale bëhet muaji real i tanishëm
+    state.currentPeriod = getRealPeriod();
+    saveState();
+    renderAll();
+    alert(`${periodLabel(periodToClose)} u arkivua. Muaji i ri filloi bosh.`);
+  }
+
+  function renderArchives() {
+    const label = document.getElementById('currentPeriodLabel');
+    if (label) label.innerText = state.currentPeriod ? periodLabel(state.currentPeriod) : periodLabel(getRealPeriod());
+    const c = document.getElementById('archivesList');
+    if (!c) return;
+    if (!state.archives || state.archives.length === 0) {
+      c.innerHTML = `<p style="color:var(--text-light); font-size:13px; text-align:center; padding:10px;">Ende s'ka muaj të arkivuar.</p>`;
+      return;
+    }
+    c.innerHTML = state.archives.map((a, i) => {
+      const transT = (a.transactions||[]).reduce((s,t)=>s+t.amount,0);
+      const fixedT = (a.fixedExpenses||[]).reduce((s,f)=>s+f.amount,0);
+      const bonusT = (a.bonuses||[]).reduce((s,b)=>s+b.amount,0);
+      const totalShpenz = transT + fixedT;
+      return `<div class="list-item" onclick="viewArchive(${i})" style="cursor:pointer;">
+        <div class="item-info">
+          <div class="item-desc">${periodLabel(a.period)}</div>
+          <div class="item-sub">Buxheti: ${a.budgetTotal||0} L • Shpenzuar: ${totalShpenz} L • Bonuse: ${bonusT} L</div>
+        </div>
+        <div class="amount" style="color:var(--primary); font-size:13px;">Shiko ›</div>
+      </div>`;
+    }).join('');
+  }
+
+  function viewArchive(i) {
+    const a = state.archives[i];
+    if (!a) return;
+    const transT = (a.transactions||[]).reduce((s,t)=>s+t.amount,0);
+    const fixedT = (a.fixedExpenses||[]).reduce((s,f)=>s+f.amount,0);
+    const bonusT = (a.bonuses||[]).reduce((s,b)=>s+b.amount,0);
+    let html = `<div style="margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Buxheti total</span><strong>${a.budgetTotal||0} L</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Shpenzime ndryshueshme</span><strong>${transT} L</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Shpenzime fikse</span><strong>${fixedT} L</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Bonuse</span><strong>${bonusT} L</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:8px 0;"><span>Mbetur (buxhet − shpenzime + bonus)</span><strong>${(a.budgetTotal||0)-transT-fixedT+bonusT} L</strong></div>
+    </div>`;
+
+    if ((a.transactions||[]).length) {
+      html += `<h4 style="margin:12px 0 6px;">🛒 Shpenzime</h4>`;
+      html += a.transactions.map(t => `<div class="item-sub" style="display:flex; justify-content:space-between; padding:4px 0;"><span>${t.desc||t.category} <span style="color:var(--text-light)">(${t.paidBy||'—'} • ${t.date})</span></span><span>${t.amount} L</span></div>`).join('');
+    }
+    if ((a.fixedExpenses||[]).length) {
+      html += `<h4 style="margin:12px 0 6px;">🏠 Fikse</h4>`;
+      html += a.fixedExpenses.map(f => `<div class="item-sub" style="display:flex; justify-content:space-between; padding:4px 0;"><span>${f.name} <span style="color:var(--text-light)">(${f.paidBy||'Auto'})</span></span><span>${f.amount} L</span></div>`).join('');
+    }
+    if ((a.bonuses||[]).length) {
+      html += `<h4 style="margin:12px 0 6px;">💰 Bonuse</h4>`;
+      html += a.bonuses.map(b => `<div class="item-sub" style="display:flex; justify-content:space-between; padding:4px 0;"><span>${b.name} <span style="color:var(--text-light)">(${b.paidBy||'—'})</span></span><span>${b.amount} L</span></div>`).join('');
+    }
+
+    document.getElementById('modalTitle').innerText = `Arkiv: ${periodLabel(a.period)}`;
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('active');
   }
 
   // LOGJIKA E SAKTË E BALANCËS REALE
@@ -750,16 +911,20 @@
 
   function renderTabContent() {
     const content = document.getElementById('tabContent'); const cm = state.viewMonth, cy = state.viewYear;
-    let navHtml = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(cm)} ${cy}</span><button onclick="changeMonth(1)">❯</button></div>`;
-    let allItems = [...state.transactions];
+    const md = getMonthData(cy, cm);
+    const archBadge = md.isArchived ? ` <span style="font-size:11px; background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:10px; font-weight:700;">Arkiv</span>` : '';
+    let navHtml = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(cm)} ${cy}${archBadge}</span><button onclick="changeMonth(1)">❯</button></div>`;
+    let allItems = [...md.transactions];
     if (state.activeTab === 'Të gjitha') {
-      state.fixedExpenses.forEach(f => allItems.push({ ...f, desc: f.name + ' (Fiks)', category: 'Fikse', paidBy: f.paidBy||'Auto', type: 'fixed' }));
-      state.bonuses.forEach(b => allItems.push({ ...b, desc: b.name + ' (Bonus)', category: 'Bonus', paidBy: b.paidBy||'Sistem', amount: -b.amount, type: 'bonus' }));
+      md.fixedExpenses.forEach(f => allItems.push({ ...f, desc: f.name + ' (Fiks)', category: 'Fikse', paidBy: f.paidBy||'Auto', type: 'fixed' }));
+      md.bonuses.forEach(b => allItems.push({ ...b, desc: b.name + ' (Bonus)', category: 'Bonus', paidBy: b.paidBy||'Sistem', amount: -b.amount, type: 'bonus' }));
       allItems = allItems.filter(i => { const d = new Date(i.date); return d.getMonth() === cm && d.getFullYear() === cy; });
       allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
     } else { allItems = allItems.filter(t => { const d = new Date(t.date); return t.category===state.activeTab && d.getMonth() === cm && d.getFullYear() === cy; }); }
     const btnText = state.activeTab === 'Të gjitha' ? '+ Shto Shpenzim' : `+ Shto te "${state.activeTab}"`;
-    let html = navHtml + `<div style="margin-bottom:18px;display:flex;justify-content:flex-end;"><button class="btn btn-primary" onclick="openModal('category','${state.activeTab}')">${btnText}</button></div>`;
+    // Te muajt e arkivuar s'lejohet shtim/fshirje (muaji është mbyllur)
+    const addBtnHtml = md.isArchived ? '' : `<div style="margin-bottom:18px;display:flex;justify-content:flex-end;"><button class="btn btn-primary" onclick="openModal('category','${state.activeTab}')">${btnText}</button></div>`;
+    let html = navHtml + addBtnHtml;
     if (allItems.length === 0) html += `<div class="empty-state">Asnjë shpenzim në ${getMonthName(cm)}.</div>`;
     else {
       html += '<div style="display:flex;flex-direction:column;gap:10px;">';
@@ -769,27 +934,55 @@
         let badge = ''; let amountDisplay = `-${t.amount} LEK`; let amountColor = 'var(--accent)';
         if(isFixed) badge = '<span style="background:#EBF8FF;color:#2B6CB0;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">FIKSE</span>';
         if(isBonus) { badge = '<span style="background:#E6F7EF;color:#2F855A;padding:3px 8px;border-radius:6px;font-size:10px;margin-left:6px;font-weight:700;">BONUS</span>'; amountDisplay = `+${t.amount} LEK`; amountColor = 'var(--success)'; }
-        html += `<div class="list-item" style="border:1.5px solid var(--border);border-radius:14px;padding:14px;background:white;"><div class="info"><div class="title">${t.desc}${badge}</div><div class="sub">${t.category} • ${t.date} • ${t.paidBy || 'Auto'}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount" style="color:${amountColor}">${amountDisplay}</div><button class="delete-btn" onclick="${delAction}">🗑️</button></div></div>`;
+        // Fshi butonin e fshirjes për muajt e arkivuar
+        const delBtn = md.isArchived ? '' : `<button class="delete-btn" onclick="${delAction}">🗑️</button>`;
+        html += `<div class="list-item" style="border:1.5px solid var(--border);border-radius:14px;padding:14px;background:white;"><div class="info"><div class="title">${t.desc}${badge}</div><div class="sub">${t.category} • ${t.date} • ${t.paidBy || 'Auto'}</div></div><div style="display:flex;align-items:center;gap:10px;"><div class="amount" style="color:${amountColor}">${amountDisplay}</div>${delBtn}</div></div>`;
       });
       html += '</div>';
     }
     content.innerHTML = html;
   }
 
+  // Kthen të dhënat e një muaji të caktuar: nga listat aktive nëse s'është arkivuar,
+  // ose nga arkivi nëse muaji është mbyllur. Kështu kalendari shfaq edhe muajt e kaluar.
+  function getMonthData(y, m) {
+    const period = `${y}-${String(m+1).padStart(2,'0')}`;
+    const arch = (state.archives || []).find(a => a.period === period);
+    if (arch) {
+      return {
+        transactions: arch.transactions || [],
+        fixedExpenses: arch.fixedExpenses || [],
+        bonuses: arch.bonuses || [],
+        // pagesat aktive përdoren gjithmonë (borxhe/kukuma s'arkivohen), filtruar sipas datës më poshtë
+        payments: state.payments || [],
+        isArchived: true
+      };
+    }
+    return {
+      transactions: state.transactions || [],
+      fixedExpenses: state.fixedExpenses || [],
+      bonuses: state.bonuses || [],
+      payments: state.payments || [],
+      isArchived: false
+    };
+  }
+
   function renderCalendarView() {
     const content = document.getElementById('tabContent'); const y = state.viewYear, m = state.viewMonth;
+    const md = getMonthData(y, m);
     const firstDay = new Date(y,m,1).getDay(), daysInMonth = new Date(y,m+1,0).getDate();
     const dn = ["H","M","M","E","P","Sh","D"];
-    let html = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(m)} ${y}</span><button onclick="changeMonth(1)">❯</button></div><div class="calendar-grid">`;
+    const archBadge = md.isArchived ? ` <span style="font-size:11px; background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:10px; font-weight:700;">Arkiv</span>` : '';
+    let html = `<div class="month-navigator"><button onclick="changeMonth(-1)">❮</button><span>${getMonthName(m)} ${y}${archBadge}</span><button onclick="changeMonth(1)">❯</button></div><div class="calendar-grid">`;
     dn.forEach(d => html += `<div class="calendar-day-name">${d}</div>`);
     for(let i=0;i<(firstDay===0?6:firstDay-1);i++) html += `<div class="calendar-day" style="visibility:hidden"></div>`;
     for(let day=1;day<=daysInMonth;day++){
       const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       let dayNet = 0; let hasActivity = false;
-      state.transactions.filter(t=>t.date===ds).forEach(t => { dayNet -= t.amount; hasActivity=true; });
-      state.fixedExpenses.filter(f=>f.date===ds).forEach(f => { dayNet -= f.amount; hasActivity=true; });
-      state.bonuses.filter(b=>b.date===ds).forEach(b => { dayNet += b.amount; hasActivity=true; });
-      state.payments.filter(p=>p.date===ds).forEach(p => { if(p.type === 'received') dayNet += p.amount; else dayNet -= p.amount; hasActivity = true; });
+      md.transactions.filter(t=>t.date===ds).forEach(t => { dayNet -= t.amount; hasActivity=true; });
+      md.fixedExpenses.filter(f=>f.date===ds).forEach(f => { dayNet -= f.amount; hasActivity=true; });
+      md.bonuses.filter(b=>b.date===ds).forEach(b => { dayNet += b.amount; hasActivity=true; });
+      md.payments.filter(p=>p.date===ds).forEach(p => { if(p.type === 'received') dayNet += p.amount; else dayNet -= p.amount; hasActivity = true; });
       const isSel = state.selectedDate === ds; const colorClass = dayNet >= 0 ? 'var(--success)' : 'var(--accent)';
       html += `<div class="calendar-day ${hasActivity?'has-transactions':''} ${isSel?'selected':''}" onclick="selectDay('${ds}')"><span>${day}</span>${hasActivity ? `<span class="day-total" style="color:${isSel?'white':colorClass}">${Math.abs(dayNet)}L</span>` : ''}</div>`;
     }
@@ -800,10 +993,13 @@
   function selectDay(ds) { state.selectedDate=ds; renderCalendarView(); }
   function showDayDetails(ds) {
     const el = document.getElementById('dayDetailsSection'); let items = [];
-    state.transactions.filter(t=>t.date===ds).forEach(t => items.push({...t, type:'exp', sign:'-'}));
-    state.fixedExpenses.filter(f=>f.date===ds).forEach(f => items.push({desc:f.name+' (Fiks)', amount:f.amount, category:'Fikse', paidBy:f.paidBy||'Auto', type:'fix', sign:'-'}));
-    state.bonuses.filter(b=>b.date===ds).forEach(b => items.push({desc:b.name+' (Bonus)', amount:b.amount, category:'Bonus', paidBy:b.paidBy||'Sistem', type:'inc', sign:'+'}));
-    state.payments.filter(p=>p.date===ds).forEach(p => { const target = p.targetType==='goal' ? state.goals.find(g=>g.id===p.targetId) : state.debts.find(d=>d.id===p.targetId); const name = target ? target.name : 'Objektiv'; const isIn = p.type==='received'; items.push({ desc: (isIn ? 'Arkëtuar: ' : 'Paguar: ') + name, amount: p.amount, category: p.targetType==='goal'?'Kukuma':'Borxh', paidBy: p.paidBy||'Manual', type: isIn?'inc':'exp', sign: isIn?'+':'-' }); });
+    // Përcakto nga cili muaj vjen kjo datë (aktiv apo arkiv)
+    const dObj = new Date(ds);
+    const md = getMonthData(dObj.getFullYear(), dObj.getMonth());
+    md.transactions.filter(t=>t.date===ds).forEach(t => items.push({...t, type:'exp', sign:'-'}));
+    md.fixedExpenses.filter(f=>f.date===ds).forEach(f => items.push({desc:f.name+' (Fiks)', amount:f.amount, category:'Fikse', paidBy:f.paidBy||'Auto', type:'fix', sign:'-'}));
+    md.bonuses.filter(b=>b.date===ds).forEach(b => items.push({desc:b.name+' (Bonus)', amount:b.amount, category:'Bonus', paidBy:b.paidBy||'Sistem', type:'inc', sign:'+'}));
+    md.payments.filter(p=>p.date===ds).forEach(p => { const target = p.targetType==='goal' ? state.goals.find(g=>g.id===p.targetId) : state.debts.find(d=>d.id===p.targetId); const name = target ? target.name : 'Objektiv'; const isIn = p.type==='received'; items.push({ desc: (isIn ? 'Arkëtuar: ' : 'Paguar: ') + name, amount: p.amount, category: p.targetType==='goal'?'Kukuma':'Borxh', paidBy: p.paidBy||'Manual', type: isIn?'inc':'exp', sign: isIn?'+':'-' }); });
     const total = items.reduce((s,i) => i.sign==='+' ? s+i.amount : s-i.amount, 0);
     let html = `<div style="background:white;border-radius:16px;padding:20px;border:1.5px solid var(--border);margin-top:12px;box-shadow:var(--shadow);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);"><h3 style="margin:0; font-size:16px; font-weight:700;">📅 ${ds}</h3><span style="font-weight:800; font-size:18px; color:${total>=0?'var(--success)':'var(--accent)'}">Neto: ${total>0?'+':''}${total} LEK</span></div>`;
     if(items.length===0) html += `<div class="empty-state" style="padding:15px;">Asnjë lëvizje.</div>`;
@@ -813,13 +1009,14 @@
 
   function openMonthlyOverview() {
     const cm = state.viewMonth, cy = state.viewYear;
+    const md = getMonthData(cy, cm);
     let groups = { income: { title: "💰 Të Ardhura & Bonuse", items: [], total: 0, type: 'plus' }, received: { title: "💵 Këste të Arkëtuara", items: [], total: 0, type: 'plus' }, fixed: { title: "🏠 Shpenzime Fikse", items: [], total: 0, type: 'minus' }, variable: { title: "🛒 Shpenzime Ndryshueshme", items: [], total: 0, type: 'minus' }, debt_paid: { title: "💸 Këste Borxhesh Paguara", items: [], total: 0, type: 'minus' }, goal: { title: "🎯 Kursime Kukuma", items: [], total: 0, type: 'minus' } };
-    state.bonuses.forEach(b => { const d = new Date(b.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.income.items.push({ desc: b.name, sub: `${b.date} (${b.paidBy||'Sistem'})`, amount: b.amount }); groups.income.total += b.amount; } });
-    state.payments.filter(p => p.type === 'received').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.received.items.push({ desc: target ? target.name : 'I panjohur', sub: `${p.date} (${p.paidBy||'?'})`, amount: p.amount }); groups.received.total += p.amount; } });
-    state.fixedExpenses.forEach(f => { const d = new Date(f.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.fixed.items.push({ desc: f.name, sub: `${f.date} (${f.paidBy||'Auto'})`, amount: f.amount }); groups.fixed.total += f.amount; } });
-    state.transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===cm && d.getFullYear()===cy; }).forEach(t => { groups.variable.items.push({ desc: t.desc, sub: `${t.category} • ${t.date} • ${t.paidBy}`, amount: t.amount }); groups.variable.total += t.amount; });
-    state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.debt_paid.items.push({ desc: target ? target.name : 'Borxh', sub: `${p.date} (${p.paidBy||'?'})`, amount: p.amount }); groups.debt_paid.total += p.amount; } });
-    const goalPaymentsThisMonth = state.payments.filter(p => p.targetType === 'goal' && new Date(p.date).getMonth() === cm && new Date(p.date).getFullYear() === cy);
+    md.bonuses.forEach(b => { const d = new Date(b.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.income.items.push({ desc: b.name, sub: `${b.date} (${b.paidBy||'Sistem'})`, amount: b.amount }); groups.income.total += b.amount; } });
+    md.payments.filter(p => p.type === 'received').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.received.items.push({ desc: target ? target.name : 'I panjohur', sub: `${p.date} (${p.paidBy||'?'})`, amount: p.amount }); groups.received.total += p.amount; } });
+    md.fixedExpenses.forEach(f => { const d = new Date(f.date); if(d.getMonth()===cm && d.getFullYear()===cy) { groups.fixed.items.push({ desc: f.name, sub: `${f.date} (${f.paidBy||'Auto'})`, amount: f.amount }); groups.fixed.total += f.amount; } });
+    md.transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===cm && d.getFullYear()===cy; }).forEach(t => { groups.variable.items.push({ desc: t.desc, sub: `${t.category} • ${t.date} • ${t.paidBy}`, amount: t.amount }); groups.variable.total += t.amount; });
+    md.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').forEach(p => { const d = new Date(p.date); if(d.getMonth()===cm && d.getFullYear()===cy) { const target = state.debts.find(d => d.id === p.targetId); groups.debt_paid.items.push({ desc: target ? target.name : 'Borxh', sub: `${p.date} (${p.paidBy||'?'})`, amount: p.amount }); groups.debt_paid.total += p.amount; } });
+    const goalPaymentsThisMonth = md.payments.filter(p => p.targetType === 'goal' && new Date(p.date).getMonth() === cm && new Date(p.date).getFullYear() === cy);
     const goalAddedThisMonth = goalPaymentsThisMonth.reduce((s,p) => s+p.amount, 0);
     if(goalAddedThisMonth > 0) { groups.goal.items.push({desc: "Pagesa drejt objektivave", sub: "Këtë muaj", amount: goalAddedThisMonth}); groups.goal.total = goalAddedThisMonth; }
 
