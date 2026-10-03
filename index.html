@@ -587,7 +587,7 @@
       ...state.transactions.map(t => t.date),
       ...state.fixedExpenses.map(f => f.date),
       ...state.bonuses.map(b => b.date),
-      ...state.payments.map(p => p.date)
+      ...state.payments.filter(p => isInCurrentPeriod(p.date)).map(p => p.date)
     ].filter(d => d).sort();
 
     if (allDates.length > 0) earliestDate = allDates[0];
@@ -606,7 +606,8 @@
       allEvents.push({ desc: b.name + ' (Bonus)', sub: `Bonus • ${b.paidBy || 'Sistem'}`, amount: b.amount, date: b.date, type: 'inc' });
     });
 
-    state.payments.forEach(p => {
+    state.payments.filter(p => isInCurrentPeriod(p.date)).forEach(p => {
+      // Vetëm këstet e këtij muaji — historiku i plotë i borxhit/kukumës qëndron te seksioni i vet (Historiku), jo këtu.
       const target = p.targetType === 'goal' ? state.goals.find(g => g.id === p.targetId) : state.debts.find(d => d.id === p.targetId);
       const name = target ? target.name : 'Objektiv';
       const isIn = p.type === 'received';
