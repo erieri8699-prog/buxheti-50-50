@@ -502,13 +502,21 @@
     document.getElementById('modalOverlay').classList.add('active');
   }
 
+  // Këstet (pagesa borxhesh/kukuma) prekin buxhetin VETËM në muajin kur paguhen.
+  // Pa këtë filtër, një këst i paguar muajin e kaluar do ta ulte buxhetin edhe këtë muaj,
+  // sepse state.payments mban historikun e plotë dhe nuk zerohet në mbylljen e muajit.
+  function isInCurrentPeriod(dateStr) {
+    const period = state.currentPeriod || getRealPeriod();
+    return (dateStr || '').slice(0, 7) === period;
+  }
+
   function calculateBalance() {
     const bonusTotal = state.bonuses.reduce((s, b) => s + b.amount, 0);
-    const receivedTotal = state.payments.filter(p => p.type === 'received').reduce((s, p) => s + p.amount, 0);
+    const receivedTotal = state.payments.filter(p => p.type === 'received' && isInCurrentPeriod(p.date)).reduce((s, p) => s + p.amount, 0);
     const transTotal = state.transactions.reduce((s, t) => s + t.amount, 0);
     const fixedTotal = state.fixedExpenses.reduce((s, f) => s + f.amount, 0);
-    const debtsPaidTotal = state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid').reduce((s, p) => s + p.amount, 0);
-    const goalsPaidTotal = state.payments.filter(p => p.targetType === 'goal' && p.type === 'paid').reduce((s, p) => s + p.amount, 0);
+    const debtsPaidTotal = state.payments.filter(p => p.targetType === 'debt' && p.type === 'paid' && isInCurrentPeriod(p.date)).reduce((s, p) => s + p.amount, 0);
+    const goalsPaidTotal = state.payments.filter(p => p.targetType === 'goal' && p.type === 'paid' && isInCurrentPeriod(p.date)).reduce((s, p) => s + p.amount, 0);
     const totalIn = (state.budgets.total || 0) + bonusTotal + receivedTotal;
     const totalOut = transTotal + fixedTotal + debtsPaidTotal + goalsPaidTotal;
     return totalIn - totalOut;
@@ -533,6 +541,7 @@
     });
 
     state.payments.forEach(p => {
+      if (!isInCurrentPeriod(p.date)) return; // këstet e muajve të kaluar nuk prekin buxhetin e këtij muaji
       if (p.type === 'paid') {
         const payer = p.paidBy || 'Erald';
         if (payer === 'Erald') eraldSpent += p.amount;
@@ -665,6 +674,7 @@
       else if (p === 'Auto') { spent += f.amount/2; spentItems.push({ desc: f.name + ' (50%)', sub: f.date, amount: f.amount/2 }); }
     });
     state.payments.forEach(p => {
+      if (!isInCurrentPeriod(p.date)) return; // vetëm këstet e paguara këtë muaj ulin buxhetin
       if (p.type === 'paid' && (p.paidBy === person || (!p.paidBy && person === 'Erald'))) {
         const target = p.targetType === 'goal' ? state.goals.find(g => g.id === p.targetId) : state.debts.find(d => d.id === p.targetId);
         spent += p.amount; spentItems.push({ desc: `Paguar: ${target?.name || 'Objektiv'}`, sub: p.date, amount: p.amount });
@@ -677,6 +687,7 @@
       else if (r === 'Sistem') { added += b.amount/2; addedItems.push({ desc: b.name + ' (50%)', sub: `Bonus • ${b.date}`, amount: b.amount/2 }); }
     });
     state.payments.forEach(p => {
+      if (!isInCurrentPeriod(p.date)) return; // vetëm arkëtimet e këtij muaji
       if (p.type === 'received' && (p.paidBy === person || (!p.paidBy && person === state.user))) {
         const target = state.debts.find(d => d.id === p.targetId);
         added += p.amount; addedItems.push({ desc: `Arkëtuar: ${target?.name || 'Borxh'}`, sub: p.date, amount: p.amount });
@@ -724,6 +735,7 @@
       else if (p === 'Auto') { items.push({ desc: f.name + ' (Fiks 50%)', sub: `Fiks • ${f.date}`, amount: f.amount/2 }); total += f.amount/2; }
     });
     state.payments.forEach(p => {
+      if (!isInCurrentPeriod(p.date)) return; // "Paguar" tregon vetëm këtë muaj, në përputhje me buxhetin
       if (p.type === 'paid' && (p.paidBy === person || (!p.paidBy && person === 'Erald'))) {
         const target = p.targetType === 'goal' ? state.goals.find(g => g.id === p.targetId) : state.debts.find(d => d.id === p.targetId);
         items.push({ desc: `Paguar: ${target?.name || 'Objektiv'}`, sub: `${p.targetType === 'goal' ? 'Kukuma' : 'Borxh'} • ${p.date}`, amount: p.amount }); total += p.amount;
